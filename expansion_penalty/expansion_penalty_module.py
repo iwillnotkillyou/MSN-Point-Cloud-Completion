@@ -18,7 +18,8 @@ import numpy as np
 import torch
 from torch import nn
 from torch.autograd import Function
-import expansion_penalty
+from torch.utils.cpp_extension import load
+expansion_penalty = load(name="expansion_penalty/expansion_penalty.cpp", sources=["expansion_penalty/expansion_penalty.cpp","expansion_penalty/expansion_penalty_cuda.cu"])
 
 # GPU tensors only
 class expansionPenaltyFunction(Function):

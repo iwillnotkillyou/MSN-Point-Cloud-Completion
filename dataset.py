@@ -1,4 +1,4 @@
-import open3d as o3d
+import pointclouds as o3d
 import torch
 import numpy as np
 import torch.utils.data as data

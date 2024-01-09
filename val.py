@@ -1,5 +1,5 @@
 import sys
-import open3d as o3d
+import pointclouds as o3d
 from model import *
 from utils import *
 import argparse
@@ -9,7 +9,7 @@ import torch
 import os
 import visdom
 sys.path.append("./emd/")
-import emd_module as emd
+import emd.emd_module as emd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default = './trained_model/network.pth',  help='optional reload model path')

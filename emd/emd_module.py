@@ -23,7 +23,8 @@ import numpy as np
 import torch
 from torch import nn
 from torch.autograd import Function
-import emd
+from torch.utils.cpp_extension import load
+emd = load(name="emd.cpp", sources=["emd.cpp","emd_cuda.cu"])
 
 
 

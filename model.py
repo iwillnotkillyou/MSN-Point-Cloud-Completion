@@ -7,10 +7,8 @@ from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
 import sys
-sys.path.append("./expansion_penalty/")
-import expansion_penalty_module as expansion
-sys.path.append("./MDS/")
-import MDS_module
+import expansion_penalty.expansion_penalty_module as expansion
+import MDS.MDS_module
 
 class STN3d(nn.Module):
     def __init__(self, num_points = 2500):
