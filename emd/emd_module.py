@@ -24,8 +24,10 @@ import torch
 from torch import nn
 from torch.autograd import Function
 from torch.utils.cpp_extension import load
-emd = load(name="emd.cpp", sources=["emd.cpp","emd_cuda.cu"])
-
+from torch.utils.cpp_extension import load
+def load_package(name):
+  return load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_cuda.cu"])
+emd = load_package("emd")
 
 
 

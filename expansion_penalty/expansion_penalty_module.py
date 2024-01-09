@@ -19,8 +19,10 @@ import torch
 from torch import nn
 from torch.autograd import Function
 from torch.utils.cpp_extension import load
-expansion_penalty = load(name="expansion_penalty/expansion_penalty.cpp", sources=["expansion_penalty/expansion_penalty.cpp","expansion_penalty/expansion_penalty_cuda.cu"])
-
+from torch.utils.cpp_extension import load
+def load_package(name):
+  return load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_cuda.cu"])
+expansion_penalty = load_package("expansion_penalty")
 # GPU tensors only
 class expansionPenaltyFunction(Function):
     @staticmethod

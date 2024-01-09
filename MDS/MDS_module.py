@@ -2,7 +2,9 @@ import torch
 from torch import nn
 from torch.autograd import Function
 from torch.utils.cpp_extension import load
-MDS = load(name="MDS.cpp", sources=["MDS.cpp","MDS_cuda.cu"])
+def load_package(name):
+  return load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_cuda.cu"])
+MDS = load_package("MDS")
 
 class MinimumDensitySampling(Function):
     @staticmethod
