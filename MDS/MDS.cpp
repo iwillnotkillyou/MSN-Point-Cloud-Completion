@@ -26,23 +26,23 @@ void minimum_density_sampling_kernel_wrapper(int b, int n, int m,
 
 #define CHECK_CUDA(x)                                          \
   do {                                                         \
-    AT_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor"); \
+    TORCH_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor"); \
   } while (0)
 
 #define CHECK_CONTIGUOUS(x)                                         \
   do {                                                              \
-    AT_CHECK(x.is_contiguous(), #x " must be a contiguous tensor"); \
+    TORCH_CHECK(x.is_contiguous(), #x " must be a contiguous tensor"); \
   } while (0)
 
 #define CHECK_IS_INT(x)                              \
   do {                                               \
-    AT_CHECK(x.scalar_type() == at::ScalarType::Int, \
+    TORCH_CHECK(x.scalar_type() == at::ScalarType::Int, \
              #x " must be an int tensor");           \
   } while (0)
 
 #define CHECK_IS_FLOAT(x)                              \
   do {                                                 \
-    AT_CHECK(x.scalar_type() == at::ScalarType::Float, \
+    TORCH_CHECK(x.scalar_type() == at::ScalarType::Float, \
              #x " must be a float tensor");            \
   } while (0)
 
@@ -66,7 +66,7 @@ at::Tensor gather_points(at::Tensor points, at::Tensor idx) {
                                  idx.size(1), points.data<float>(),
                                  idx.data<int>(), output.data<float>());
   } else {
-    AT_CHECK(false, "CPU not supported");
+    TORCH_CHECK(false, "CPU not supported");
   }
 
   return output;
@@ -92,7 +92,7 @@ at::Tensor gather_points_grad(at::Tensor grad_out, at::Tensor idx,
                                       idx.size(1), grad_out.data<float>(),
                                       idx.data<int>(), output.data<float>());
   } else {
-    AT_CHECK(false, "CPU not supported");
+    TORCH_CHECK(false, "CPU not supported");
   }
 
   return output;
@@ -110,7 +110,7 @@ at::Tensor minimum_density_sampling(at::Tensor points, const int nsamples, at::T
         points.size(0), points.size(1), nsamples, points.data<float>(),
         tmp.data<float>(), output.data<int>(), mean_mst_length.data<float>());
   } else {
-    AT_CHECK(false, "CPU not supported");
+    TORCH_CHECK(false, "CPU not supported");
   }
 
   return output;
