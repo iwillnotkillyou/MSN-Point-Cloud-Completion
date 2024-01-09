@@ -8,7 +8,7 @@ import numpy as np
 import torch.nn.functional as F
 import sys
 import expansion_penalty.expansion_penalty_module as expansion
-import MDS.MDS_module
+import MDS.MDS_module as MDS_module
 
 class STN3d(nn.Module):
     def __init__(self, num_points = 2500):
