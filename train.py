@@ -16,9 +16,6 @@ from time import time
 sys.path.append("./emd/")
 import emd.emd_module as emd
 
-from torch.utils.cpp_extension import load
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--batchSize', type=int, default=8, help='input batch size')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=12)
