@@ -5,7 +5,7 @@ import torch
 from torch.nn.modules.utils import _triple, _pair, _single
 from torch.utils.cpp_extension import load
 name = "softpool_cuda"
-softpool_cuda = load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_kernel.cu",f"{name}/limits.cuh"])
+softpool_cuda = load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_kernel.cu"])
 
 class CUDA_SOFTPOOL1d(Function):
     @staticmethod
