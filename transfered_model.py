@@ -9,8 +9,7 @@ import torch.nn.functional as F
 import sys
 import expansion_penalty.expansion_penalty_module as expansion
 import MDS.MDS_module as MDS_module
-from model import PointNetfeat
-from model import PointGenCon
+from model import *
 
 class Res(nn.Module):
     def __init__(self):
@@ -70,13 +69,13 @@ class GlobalTransform(nn.Module):
         self.decoded_size = decoded_size
         sizes1 = [decoded_size, (decoded_size*decoded_size)//2, decoded_size*decoded_size]
         sizes2 = [decoded_size, decoded_size, 3]
-        self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y)), SoftPool3d()))
-        self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y)), SoftPool3d()))
+        self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), SoftPool3d())))
+        self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), SoftPool3d())))
 
 
     def forward(self, input, bottlenecked, decoded):
         bs = decoded.shape[0]
-        x = self.convs(decoded)
+        x = self.convs1(decoded)
         transform, _ = torch.max(x, 2).view(-1, self.decoded_size, self.decoded_size)
         transformed = torch.matmul(transform, decoded.view(bs, -1, self.decoded_size, 1)).view(decoded.shape)
         return self.convs2(transformed)
@@ -85,7 +84,7 @@ class GlobalTransform(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, encoder_state_dict, decoder_state_dict, num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
@@ -96,17 +95,16 @@ class TransformMSN(nn.Module):
             nn.BatchNorm1d(self.bottleneck_size),
             nn.ReLU()
         )
-        self.encoder.load_state_dict(encoder_state_dict)
         for param in self.encoder.parameters():
             param.requires_grad = False
         self.decoder = nn.ModuleList(
             [PointGenCon(bottleneck_size=2 + self.bottleneck_size) for i in range(0, self.n_primitives)])
-        self.decoder.load_state_dict(decoder_state_dict)
-        self.decoder.conv4 = nn.Linear
-        self.decoder.th = nn.Linear
-        for param in self.decoder.parameters():
-            param.requires_grad = False
-        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder.conv3.out_features)
+        for de in self.decoder:
+          de.conv4 = nn.Identity()
+          de.th = nn.Identity()
+          for param in de.parameters():
+              param.requires_grad = False
+        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels)
         self.res = Res()
         self.expansion = expansion.expansionPenaltyModule()
 
