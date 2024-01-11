@@ -150,6 +150,7 @@ class GlobalTransform(nn.Module):
         sizes2 = [self.latents, 3]
         self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), nn.MaxPool1d(2))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
+        self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
 
 
     def forward(self, partial, bottlenecked, decoded):
@@ -184,7 +185,6 @@ class TransformMSN(nn.Module):
           de.conv4 = nn.Identity()
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
-        # Adding the identity to constrain the feature transformation matrix to be close to orthogonal matrix
         self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels)
         self.res = res
         self.expansion = expansion.expansionPenaltyModule()
