@@ -185,7 +185,7 @@ class TransformMSN(nn.Module):
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
         # Adding the identity to constrain the feature transformation matrix to be close to orthogonal matrix
-        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels) + identity
+        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels)
         self.res = res
         self.expansion = expansion.expansionPenaltyModule()
 
