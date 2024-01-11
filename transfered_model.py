@@ -150,7 +150,7 @@ class GlobalTransform(nn.Module):
         sizes2 = [self.latents, 3]
         self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), nn.MaxPool1d(2))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
-        self.identity = torch.diag(torch.ones(self.latents))
+        self.identi = torch.diag(torch.ones(self.latents))
 
 
     def forward(self, partial, bottlenecked, decoded):
@@ -158,7 +158,7 @@ class GlobalTransform(nn.Module):
         x = self.convs0(decoded)
         transform_pre = self.convs1(x)
         softmaxweights = F.softmax(transform_pre,2)
-        identity = self.identity.repeat(bs, 1)
+        identity = self.identi.repeat(bs, 1)
         transform = (softmaxweights*transform_pre).view(-1, self.latents, self.latents).contiguous() + identity
         x = torch.matmul(transform, x.transpose(0, 1).transpose(0,2).unsqueeze(3))
         x = x.squeeze().transpose(0, 2).transpose(0, 1).contiguous()
