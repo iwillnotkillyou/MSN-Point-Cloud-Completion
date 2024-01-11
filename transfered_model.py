@@ -51,6 +51,7 @@ class Res(nn.Module):
 
 class BatchNormConv1D(nn.Module):
     def __init__(self, in_features,out_features):
+        super(BatchNormConv1D, self).__init__()
         self.conv = nn.Conv1d(in_features,out_features,1)
         self.bn = torch.nn.BatchNorm1d(out_features)
 
@@ -58,26 +59,31 @@ class BatchNormConv1D(nn.Module):
         return F.relu(self.bn(self.conv(x)))
 
 def make(sizes,f,additional_args = None):
-    return [f(*[sizes[i],sizes[i+1]]+ [] if additional_args is None or additional_args[i] is None else additional_args[i]) for i in range(len(sizes))]
+    return [f(*([sizes[i],sizes[i+1]]+ [] if additional_args is None or additional_args[i] is None else additional_args[i])) for i in range(len(sizes)-1)]
 
-from softpool_cuda.soft_pool_cuda_module import SoftPool3d
+from softpool_cuda.soft_pool_cuda_module import SoftPool1d
 
 class GlobalTransform(nn.Module):
     def __init__(self, bottleneck_size, decoded_size):
         super(GlobalTransform, self).__init__()
         self.bottleneck_size = bottleneck_size
         self.decoded_size = decoded_size
-        sizes1 = [decoded_size, (decoded_size*decoded_size)//2, decoded_size*decoded_size]
-        sizes2 = [decoded_size, decoded_size, 3]
-        self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), SoftPool3d())))
-        self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), SoftPool3d())))
+        self.latents = 50
+        sizes0 = [decoded_size, self.latents]
+        self.convs0 = nn.Sequential(*make(sizes0, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
+        sizes1 = [self.latents, self.latents*self.latents]
+        sizes2 = [self.latents, 3]
+        self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), SoftPool1d())))
+        self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
 
 
-    def forward(self, input, bottlenecked, decoded):
+    def forward(self, partial, bottlenecked, decoded):
         bs = decoded.shape[0]
-        x = self.convs1(decoded)
-        transform, _ = torch.max(x, 2).view(-1, self.decoded_size, self.decoded_size)
-        transformed = torch.matmul(transform, decoded.view(bs, -1, self.decoded_size, 1)).view(decoded.shape)
+        x = self.convs0(decoded)
+        transform_pre = self.convs1(x)
+        transform = torch.max(transform_pre, 2)[0].view(-1, self.latents, self.latents)
+        transformed = torch.matmul(transform, x.transpose(0,1).transpose(0,2).unsqueeze(3))
+        transformed = transformed.squeeze().transpose(0,2).transpose(0,1)
         return self.convs2(transformed)
 
 
@@ -95,18 +101,21 @@ class TransformMSN(nn.Module):
             nn.BatchNorm1d(self.bottleneck_size),
             nn.ReLU()
         )
-        for param in self.encoder.parameters():
-            param.requires_grad = False
         self.decoder = nn.ModuleList(
             [PointGenCon(bottleneck_size=2 + self.bottleneck_size) for i in range(0, self.n_primitives)])
         for de in self.decoder:
           de.conv4 = nn.Identity()
           de.th = nn.Identity()
-          for param in de.parameters():
-              param.requires_grad = False
+        print(self.decoder[0].conv3.out_channels)
         self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels)
         self.res = Res()
         self.expansion = expansion.expansionPenaltyModule()
+
+    def freeze(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        for param in self.decoder.parameters():
+            param.requires_grad = False
 
     def forward(self, x):
         partial = x
@@ -120,9 +129,9 @@ class TransformMSN(nn.Module):
             outs.append(self.decoder[i](y))
 
 
-        outs = torch.cat(outs, 2).contiguous()
+        outs = torch.cat(outs, 2)
+        outs = self.global_transform(partial,x,outs).contiguous()
         out1 = outs.transpose(1, 2).contiguous()
-
         dist, _, mean_mst_dis = self.expansion(out1, self.num_points // self.n_primitives, 1.5)
         loss_mst = torch.mean(dist)
 
