@@ -152,6 +152,7 @@ class GlobalTransform(nn.Module):
         super(GlobalTransform, self).__init__()
         self.bottleneck_size = bottleneck_size
         self.decoded_size = decoded_size
+        self.latents = latents
         sizes0 = [decoded_size, self.latents]
         self.convs0 = nn.Sequential(*make(sizes0, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
         sizes1 = [self.latents, self.latents*self.latents]
@@ -173,17 +174,17 @@ class GlobalTransform(nn.Module):
         return self.convs2(x)
 
 class GlobalTransformWLocalConnections(nn.Module):
-    def __init__(self, bottleneck_size, decoded_size,latents,n_primitives):
+    def __init__(self, bottleneck_size, decoded_size, out_dim, latents, n_primitives):
         super(GlobalTransform, self).__init__()
         self.bottleneck_size = bottleneck_size
         self.decoded_size = decoded_size
-        self.latents = 20
+        self.latents = latents
         sizes0 = [decoded_size, self.latents]
         self.convs0 = nn.Sequential(*make(sizes0, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
         sizes1 = [n_primitives, self.latents*self.latents]
-        sizes2 = [self.latents, 3]
-        GToutsize = latents
-        self.convs = nn.Sequential(*[GlobalTransform(bottleneck_size,latents,GToutsize,latents) for x in range(n_primitives)])
+        sizes2 = [self.latents, out_dim]
+        GToutsize = self.latents
+        self.convs = nn.Sequential(*[GlobalTransform(bottleneck_size,self.latents,GToutsize,self.latents) for x in range(n_primitives)])
         self.convs_transform = nn.Sequential(*make(sizes1, lambda x,y : BatchNormLocalConv1D(x,y,GToutsize,2,1)))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
@@ -205,7 +206,7 @@ class GlobalTransformWLocalConnections(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, res, num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, res, gtFunc, num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
@@ -222,7 +223,7 @@ class TransformMSN(nn.Module):
           de.conv4 = nn.Identity()
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
-        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
+        self.global_transform = gtFunc(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
         self.res = res
         self.expansion = expansion.expansionPenaltyModule()
 
