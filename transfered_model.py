@@ -175,7 +175,7 @@ class GlobalTransform(nn.Module):
 
 class GlobalTransformWLocalConnections(nn.Module):
     def __init__(self, bottleneck_size, decoded_size, out_dim, latents, n_primitives):
-        super(GlobalTransform, self).__init__()
+        super(GlobalTransformWLocalConnections, self).__init__()
         self.bottleneck_size = bottleneck_size
         self.decoded_size = decoded_size
         self.latents = latents
