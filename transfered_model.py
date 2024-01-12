@@ -206,7 +206,7 @@ class GlobalTransformWLocalConnections(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, res, gtFunc, num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, res, gtFunc = lambda x,y,z : GlobalTransform(x, z, y, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
