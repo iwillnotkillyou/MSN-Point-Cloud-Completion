@@ -17,18 +17,18 @@ class LocallyConnected1d():
         self.kernel_size = kernel_size
         self.stride = stride
         self.weight = nn.Parameter(
-            torch.randn(out_channels, in_channels, output_size, kernel_size ** 2)
+            torch.randn(output_size, out_channels, in_channels * kernel_size)
         )
         if bias:
             self.bias = nn.Parameter(
-                torch.randn(1, out_channels, output_size)
+                torch.randn(out_channels, output_size)
             )
         else:
             self.register_parameter('bias', None)
     def forward(self,x):
-        raise NotImplementedError()
-        x = x.unfold(2, self.kernel_size, self.stride)
-        out = torch.matmul(x,self.weight)
+        x = x.unfold(1, self.kernel_size, self.stride)
+        print(x.shape)
+        out = torch.matmul(x.unsqueeze(2), self.weight).squeeze()
         if self.bias is not None:
             out += self.bias
         return out
@@ -124,6 +124,15 @@ class Res(nn.Module):
         x = self.th(self.conv7(x))
         return x
 
+class BatchNormLocalConv1D(nn.Module):
+    def __init__(self, in_channels,out_channels,output_size,kernel_size = 1, stride = 1):
+        super(BatchNormLocalConv1D, self).__init__()
+        self.conv = LocallyConnected1d(in_channels,out_channels,output_size,False,kernel_size,stride)
+        self.bn = torch.nn.BatchNorm1d(out_channels)
+
+    def forward(self, x):
+        return F.relu(self.bn(self.conv(x)))
+
 class BatchNormConv1D(nn.Module):
     def __init__(self, in_channels,out_channels,kernel_size = 1, stride = 1):
         super(BatchNormConv1D, self).__init__()
@@ -139,15 +148,14 @@ def make(sizes,f,additional_args = None):
 from softpool_cuda.soft_pool_cuda_module import soft_pool1d, SoftPool1d
 
 class GlobalTransform(nn.Module):
-    def __init__(self, bottleneck_size, decoded_size):
+    def __init__(self, bottleneck_size, decoded_size, out_dim, latents):
         super(GlobalTransform, self).__init__()
         self.bottleneck_size = bottleneck_size
         self.decoded_size = decoded_size
-        self.latents = 50
         sizes0 = [decoded_size, self.latents]
         self.convs0 = nn.Sequential(*make(sizes0, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
         sizes1 = [self.latents, self.latents*self.latents]
-        sizes2 = [self.latents, 3]
+        sizes2 = [self.latents, out_dim]
         self.convs1 = nn.Sequential(*make(sizes1, lambda x,y : nn.Sequential(BatchNormConv1D(x,y), nn.MaxPool1d(2))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
@@ -164,7 +172,36 @@ class GlobalTransform(nn.Module):
         x = x.squeeze().transpose(0, 2).transpose(0, 1).contiguous()
         return self.convs2(x)
 
+class GlobalTransformWLocalConnections(nn.Module):
+    def __init__(self, bottleneck_size, decoded_size,latents,n_primitives):
+        super(GlobalTransform, self).__init__()
+        self.bottleneck_size = bottleneck_size
+        self.decoded_size = decoded_size
+        self.latents = 20
+        sizes0 = [decoded_size, self.latents]
+        self.convs0 = nn.Sequential(*make(sizes0, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
+        sizes1 = [n_primitives, self.latents*self.latents]
+        sizes2 = [self.latents, 3]
+        GToutsize = latents
+        self.convs = nn.Sequential(*[GlobalTransform(bottleneck_size,latents,GToutsize,latents) for x in range(n_primitives)])
+        self.convs_transform = nn.Sequential(*make(sizes1, lambda x,y : BatchNormLocalConv1D(x,y,GToutsize,2,1)))
+        self.convs2 = nn.Sequential(*make(sizes2, lambda x,y : nn.Sequential(BatchNormConv1D(x,y))))
+        self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
 
+
+    def forward(self, partial, bottlenecked, decoded):
+        bs = decoded.shape[0]
+        x = self.convs0(decoded)
+        vs = []
+        for conv in self.convs:
+            vs.append(conv(x))
+        transform_pre = self.convs_transform(torch.transpose(torch.cat(vs,1),1,2).contiguous())
+        softmaxweights = F.softmax(transform_pre,2)
+        identity = self.identity.repeat(bs, 1)
+        transform = (softmaxweights*transform_pre).view(-1, self.latents, self.latents).contiguous() + identity
+        x = torch.matmul(transform, x.transpose(0, 1).transpose(0,2).unsqueeze(3))
+        x = x.squeeze().transpose(0, 2).transpose(0, 1).contiguous()
+        return self.convs2(x)
 
 
 class TransformMSN(nn.Module):
@@ -185,7 +222,7 @@ class TransformMSN(nn.Module):
           de.conv4 = nn.Identity()
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
-        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels)
+        self.global_transform = GlobalTransform(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
         self.res = res
         self.expansion = expansion.expansionPenaltyModule()
 
