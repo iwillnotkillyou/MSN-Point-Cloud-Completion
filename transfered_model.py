@@ -206,7 +206,7 @@ class GlobalTransformWLocalConnections(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, res, gtFunc = lambda x,y,z : GlobalTransform(x, z, y, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, residual, gtFunc = lambda x,y,z : GlobalTransform(x, z, y, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
@@ -224,7 +224,7 @@ class TransformMSN(nn.Module):
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
         self.global_transform = gtFunc(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
-        self.res = res
+        self.residual = residual
         self.expansion = expansion.expansionPenaltyModule()
 
     def freeze(self):
@@ -259,7 +259,7 @@ class TransformMSN(nn.Module):
 
         resampled_idx = MDS_module.minimum_density_sample(xx[:, 0:3, :].transpose(1, 2).contiguous(), out1.shape[1],mean_mst_dis)
         xx = MDS_module.gather_operation(xx, resampled_idx)
-        delta = self.res(xx)
+        delta = self.residual(xx)
         xx = xx[:, 0:3, :]
         out2 = (xx + delta).transpose(2, 1).contiguous()
         return out1, out2, loss_mst
