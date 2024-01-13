@@ -52,7 +52,7 @@ class SimpleLocallyConnected1d():
         return out
 
 class ResSmall(nn.Module):
-    def __init__(self):
+    def __init__(self, res):
         super(ResSmall, self).__init__()
         self.conv1 = torch.nn.Conv1d(4, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
@@ -84,44 +84,6 @@ class ResSmall(nn.Module):
         x = F.relu(self.bn4(self.conv4(x)))
         x = F.relu(self.bn5(self.conv5(x)))
         x = self.th(self.bn6(self.conv6(x)))
-        return x
-
-class Res(nn.Module):
-    def __init__(self):
-        super(Res, self).__init__()
-        self.conv1 = torch.nn.Conv1d(4, 64, 1)
-        self.conv2 = torch.nn.Conv1d(64, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.conv4 = torch.nn.Conv1d(1088, 512, 1)
-        self.conv5 = torch.nn.Conv1d(512, 256, 1)
-        self.conv6 = torch.nn.Conv1d(256, 128, 1)
-        self.conv7 = torch.nn.Conv1d(128, 3, 1)
-
-
-        self.bn1 = torch.nn.BatchNorm1d(64)
-        self.bn2 = torch.nn.BatchNorm1d(128)
-        self.bn3 = torch.nn.BatchNorm1d(1024)
-        self.bn4 = torch.nn.BatchNorm1d(512)
-        self.bn5 = torch.nn.BatchNorm1d(256)
-        self.bn6 = torch.nn.BatchNorm1d(128)
-        self.bn7 = torch.nn.BatchNorm1d(3)
-        self.th = nn.Tanh()
-
-    def forward(self, x):
-        batchsize = x.size()[0]
-        npoints = x.size()[2]
-        x = F.relu(self.bn1(self.conv1(x)))
-        pointfeat = x
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = self.bn3(self.conv3(x))
-        x,_ = torch.max(x, 2)
-        x = x.view(-1, 1024)
-        x = x.view(-1, 1024, 1).repeat(1, 1, npoints)
-        x = torch.cat([x, pointfeat], 1)
-        x = F.relu(self.bn4(self.conv4(x)))
-        x = F.relu(self.bn5(self.conv5(x)))
-        x = F.relu(self.bn6(self.conv6(x)))
-        x = self.th(self.conv7(x))
         return x
 
 class BatchNormLocalConv1D(nn.Module):
@@ -207,7 +169,9 @@ class GlobalTransformWLocalConnections(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, residual, gtFunc = lambda x,y,z : GlobalTransform(x, y, z, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, residualFunc = lambda x : x,
+                 gtFunc = lambda x,y,z : GlobalTransform(x, y, z, 50),
+                 num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
@@ -225,7 +189,8 @@ class TransformMSN(nn.Module):
           de.th = nn.Identity()
         print(self.decoder[0].conv3.out_channels)
         self.global_transform = gtFunc(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
-        self.residual = residual
+        self.res = PointNetRes()
+        self.residual = residualFunc(self.res())
         self.expansion = expansion.expansionPenaltyModule()
 
     def freeze(self):
