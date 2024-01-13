@@ -167,8 +167,9 @@ class GlobalTransform(nn.Module):
         x = self.convs0(decoded)
         transform_pre = self.convs1(x)
         softmaxweights = F.softmax(transform_pre,2)
-        identity = self.identity.repeat(bs, 1)
-        transform = (softmaxweights*transform_pre).view(-1, self.latents, self.latents).contiguous() + identity
+        transform = (softmaxweights*transform_pre).sum(2).view(-1, self.latents, self.latents).contiguous()
+        identity = torch.broadcast_to(self.identity.unsqueeze(0),(bs, self.identity.shape[0], self.identity.shape[1]))
+        transform = transform + identity
         x = torch.matmul(transform, x.transpose(0, 1).transpose(0,2).unsqueeze(3))
         x = x.squeeze().transpose(0, 2).transpose(0, 1).contiguous()
         return self.convs2(x)
@@ -206,7 +207,7 @@ class GlobalTransformWLocalConnections(nn.Module):
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, residual, gtFunc = lambda x,y,z : GlobalTransform(x, z, y, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
+    def __init__(self, residual, gtFunc = lambda x,y,z : GlobalTransform(x, y, z, 50), num_points=8192, bottleneck_size=1024, n_primitives=16):
         super(TransformMSN, self).__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
