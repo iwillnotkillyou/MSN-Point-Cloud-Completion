@@ -190,7 +190,7 @@ class TransformMSN(nn.Module):
         print(self.decoder[0].conv3.out_channels)
         self.global_transform = gtFunc(2 + self.bottleneck_size, self.decoder[0].conv3.out_channels, 3)
         self.res = PointNetRes()
-        self.residual = residualFunc(self.res())
+        self.residual = residualFunc(self.res)
         self.expansion = expansion.expansionPenaltyModule()
 
     def freeze(self):
