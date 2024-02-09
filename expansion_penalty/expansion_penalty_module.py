@@ -19,9 +19,8 @@ import torch
 from torch import nn
 from torch.autograd import Function
 from torch.utils.cpp_extension import load
-from torch.utils.cpp_extension import load
 def load_package(name):
-  return load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_cuda.cu"])
+  return load(name=name, sources=[f"{name}/{name}.cpp",f"{name}/{name}_cuda.cu"], extra_cuda_cflags = ["-allow-unsupported-compiler"])
 expansion_penalty = load_package("expansion_penalty")
 # GPU tensors only
 class expansionPenaltyFunction(Function):
