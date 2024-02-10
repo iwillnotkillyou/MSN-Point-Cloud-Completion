@@ -1,4 +1,5 @@
 from transfered_model import *
+import emd.emd_module as emd
 class FullModel(nn.Module):
     def __init__(self, model):
         super().__init__()
