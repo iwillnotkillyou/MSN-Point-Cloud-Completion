@@ -1,4 +1,22 @@
-
+import os
+import torch
+import time
+import numpy as np
+import json
+import logging
+from tqdm import tqdm
+import torch.optim as optim
+from torch.autograd import Variable
+import os
+from collections import defaultdict
+import h5py
+from multiprocessing import Queue
+from data_process import kill_data_processes
+from shapenet import ShapenetDataProcess
+import subprocess
+import hp5
+import sys
+import pytorch._init_paths
 
 def data_setup(args, phase, num_workers, repeat):
     if args.dataset == 'shapenet':
@@ -33,3 +51,9 @@ def test(split, args, its = 100):
 
     kill_data_processes(data_queue, data_processes)
     return np.mean(losses)
+
+def test_on_completion3D(args, download):
+  dir = "/content/repo_folder/completion3d/data"
+  test_data_queue, test_data_processes = data_setup(args, 'test', args.nworkers,
+                                                        repeat=True)
+  return test('train',args,50)

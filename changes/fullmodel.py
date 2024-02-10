@@ -1,4 +1,3 @@
-from mychamfer import *
 from transfered_model import *
 class FullModel(nn.Module):
     def __init__(self, model):
@@ -100,36 +99,3 @@ class PointNetResSoftMax(nn.Module):
         x = self.convs(x)
         x = self.th(self.lastconv(x))
         return x
-
-def make_fuller_model(name, args, architect_args):
-  def encFunc(x,y):
-    if not architect_args.use_gt:
-      return GlobalTransformIndentity()
-    if architect_args.gt_additive:
-      return GlobalTransformAdditive(x,y,architect_args.gt_layer_sizes,architect_args.latents)
-    else:
-      return GlobalTransform(x,y,architect_args.gt_layer_sizes,architect_args.latents)
-  def decFunc(x,y,z):
-    if not architect_args.use_gt_dec:
-      return GlobalTransformIndentityGlobalV()
-    if architect_args.gt_decadditive:
-      return GlobalTransformAdditiveGeneral(x,y,z,architect_args.gt_layer_sizes,architect_args.latentsdec)
-    else:
-      return GlobalTransformGeneral(x,y,z,architect_args.gt_layer_sizes,architect_args.latentsdec)
-  def residualFunc():
-    return PointNetResFT() if architect_args.res_layer_sizes == None else PointNetResSoftMax(architect_args.res_layer_sizes)
-  model = TransformMSN(residual = residualFunc, additional_encoder = encFunc, additional_decoder= decFunc)
-  network = FullModel(model)
-  #network = torch.nn.DataParallel(network)
-  #model.apply(weights_init) #initialization of the weight
-
-  if name != '':
-      previous_state_dict = torch.load(name)
-      network.load_state_dict(previous_state_dict,True,True)
-      print("Previous weight loaded ")
-  elif args.base_model != '':
-      previous_state_dict = torch.load(args.base_model)
-      model.load_state_dict(previous_state_dict,False,True)
-      print("Previous weight loaded ")
-  model.freeze()
-  return network
