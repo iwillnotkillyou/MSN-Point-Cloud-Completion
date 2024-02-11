@@ -8,7 +8,6 @@ import json
 from dataset import ShapeNet
 from my_chamfer_interface import chamferDist
 import gc
-gc.collect()
 
 class KFACargs:
     def __init__(self, momentum, cov_ema_decay, damping, stab_coeff, use_cholesky, adjust_momentum,
@@ -29,6 +28,7 @@ defaultKFACargs = KFACargs(0.80, 0.90, 0.01, 5.0,
                            True, True, 360)
 
 def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defaultKFACargs):
+  torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
   def optimf(lr):
     return optims.KFAC(lr, kfacargs.momentum, kfacargs.cov_ema_decay,
                         kfacargs.damping, kfacargs.stab_coeff,

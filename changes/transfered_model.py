@@ -14,15 +14,14 @@ from res import *
 from global_transform import *
 
 class TransformMSN(nn.Module):
-    def __init__(self, additional_encoderf, encoder_modiff):
+    def __init__(self, additional_encoderf, pointnetfeatf):
         super().__init__()
         self.num_points = 8192
         self.bottleneck_size = 1024
         self.n_primitives = 16
         self.additional_encoder = additional_encoderf()
-        self.encoder_modif = encoder_modiff()
         self.encoder = nn.Sequential(
-            PointNetfeatReturn2(self.num_points, self.encoder_modif),
+            pointnetfeatf(self.num_points),
             nn.Linear(1024, self.bottleneck_size),
             nn.BatchNorm1d(self.bottleneck_size),
             nn.ReLU()
@@ -32,12 +31,18 @@ class TransformMSN(nn.Module):
         self.res = PointNetRes()
         self.expansion = expansion.expansionPenaltyModule()
 
+    def freeze(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        for param in self.decoder.parameters():
+            param.requires_grad = False
+        for param in self.res.parameters():
+            param.requires_grad = False
+
     def changed_state_dict(self):
         d = self.state_dict()
-        print(d)
         ks = ['additional_encoder', 'encoder_modif']
-        r = dict((k, d[k]) for k in ks)
-        print(r)
+        r = dict((k, d[k]) for k in d if any(k2 in k for k2 in ks))
         return r
 
     def forward(self, x):

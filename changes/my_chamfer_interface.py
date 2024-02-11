@@ -8,16 +8,15 @@ from tqdm import tqdm
 import torch.optim as optim
 from torch.autograd import Variable
 import os
+from torch import nn
 from collections import defaultdict
 import h5py
 from multiprocessing import Queue
 from data_process import kill_data_processes
 from shapenet import ShapenetDataProcess
 import subprocess
-import hp5
 import sys
-import pytorch._init_paths
-chamferdir = ".../completion3d/pytorch/utils/chamfer"
+chamferdir = "../completion3d/pytorch/utils/chamfer"
 from torch.utils.cpp_extension import load
 chamfer = load(name="chamfer", sources=[f"{chamferdir}/chamfer_cuda.cpp",f"{chamferdir}/chamfer.cu"])
 class chamferFunction(torch.autograd.Function):
@@ -57,7 +56,7 @@ class chamferFunction(torch.autograd.Function):
 
 class chamferDist(nn.Module):
     def __init__(self):
-        super(chamferDist, self).__init__()
+        super().__init__()
 
     def forward(self, input1, input2):
         return chamferFunction.apply(input1, input2)

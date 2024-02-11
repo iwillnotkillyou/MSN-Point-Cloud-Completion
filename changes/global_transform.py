@@ -4,7 +4,6 @@ from nn_utils import *
 class GlobalTransform(nn.Module):
     def __init__(self, bottleneck_size, partial_size, globalvsize, sizes, use_globalv=True):
         super().__init__()
-        self.bottleneck_size = bottleneck_size
         self.latents = partial_size
         sizes = (partial_size,) + tuple(sizes) + (self.latents * self.latents,)
         self.convs = nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
@@ -37,7 +36,8 @@ class GlobalTransformDepthSep(nn.Module):
         super().__init__()
         self.latents = latents
         sizes = (partial_size,) + tuple(sizes) + (self.latents * self.latents,)
-        self.convs = nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
+        self.convs = nn.ModuleList([nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
+                                    for i in range(partial_size//latents)])
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
         self.use_globalv = use_globalv
         if self.use_globalv:
@@ -60,15 +60,16 @@ class GlobalTransformDepthSep(nn.Module):
         bs = x.shape[0]
         x = x.view(bs, x.shape[1] // self.latents, self.latents, x.shape[2]).contiguous()
         outs = []
-        transform_pre = self.convs(partial)
-        softmaxweights = F.softmax(transform_pre, 2)
-        transform = (softmaxweights * transform_pre).sum(2)
-        if self.use_globalv:
-            transform = self.fcs(torch.cat([transform, globalv],1))
-        transform = transform.view(-1, self.latents, self.latents)
-        identity = torch.broadcast_to(self.identity.unsqueeze(0), (bs, self.identity.shape[0], self.identity.shape[1]))
-        transform = transform + identity
         for i in range(x.shape[1]):
+            transform_pre = self.convs[i](partial)
+            softmaxweights = F.softmax(transform_pre, 2)
+            transform = (softmaxweights * transform_pre).sum(2)
+            if self.use_globalv:
+                transform = self.fcs(torch.cat([transform, globalv], 1))
+            transform = transform.view(-1, self.latents, self.latents)
+            identity = torch.broadcast_to(self.identity.unsqueeze(0),
+                                          (bs, self.identity.shape[0], self.identity.shape[1]))
+            transform = transform + identity
             outs.append(torch.matmul(transform, x[:, i, :, :]))
         return torch.cat(outs, 1)
 
