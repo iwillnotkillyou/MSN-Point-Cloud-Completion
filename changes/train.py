@@ -6,7 +6,7 @@ from utils import *
 import os
 import json
 from dataset import ShapeNet
-torch.cuda.empty_cache()
+from my_chamfer_distance import chamferDist
 import gc
 gc.collect()
 
