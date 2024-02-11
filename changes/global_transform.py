@@ -64,7 +64,7 @@ class GlobalTransformDepthSep(nn.Module):
         softmaxweights = F.softmax(transform_pre, 2)
         transform = (softmaxweights * transform_pre).sum(2)
         if self.use_globalv:
-            transform = self.fcs(torch.cat(transform, globalv))
+            transform = self.fcs(torch.cat([transform, globalv],1))
         transform = transform.view(-1, self.latents, self.latents)
         identity = torch.broadcast_to(self.identity.unsqueeze(0), (bs, self.identity.shape[0], self.identity.shape[1]))
         transform = transform + identity

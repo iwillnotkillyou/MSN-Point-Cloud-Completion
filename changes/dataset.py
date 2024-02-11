@@ -4,7 +4,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import os
 import random
-import o3d
+import open3d
 #from utils import *
 
 def resample_pcd(pcd, n):
@@ -32,7 +32,7 @@ class ShapeNet(data.Dataset):
         model_id = self.model_list[index // 50]
         scan_id = index % 50
         def read_pcd(filename):
-            pcd = o3d.io.read_point_cloud(filename)
+            pcd = open3d.io.read_point_cloud(filename)
             return torch.from_numpy(np.array(pcd.points)).float()
         if self.train:
             partial = read_pcd(os.path.join("./data/train/", model_id + '_%d_denoised.pcd' % scan_id))
