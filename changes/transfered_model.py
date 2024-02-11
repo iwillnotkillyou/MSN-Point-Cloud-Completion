@@ -34,6 +34,7 @@ class TransformMSN(nn.Module):
 
     def changed_state_dict(self):
         d = self.state_dict()
+        print(d)
         ks = ['additional_encoder', 'encoder_modif']
         r = dict((k, d[k]) for k in ks)
         print(r)

@@ -5,7 +5,7 @@ from model import *
 from utils import *
 import os
 import json
-
+from dataset import ShapeNet
 torch.cuda.empty_cache()
 import gc
 gc.collect()
