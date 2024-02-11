@@ -3,7 +3,7 @@ import torch.nn.parallel
 import torch.utils.data
 from model import *
 from nn_utils import *
-
+from global_transform import *
 
 class PointNetResLastLayerSizes(nn.Module):
     def __init__(self, sizes):
@@ -189,13 +189,43 @@ class ResSizes(nn.Module):
         x = self.th(self.bnlast(self.convlast(x)))
         return x
 
-class PointNetfeatReturn2(nn.Module):
-    def __init__(self, num_points, extra):
+class PointNetfeatReturn2TPartial(nn.Module):
+    def __init__(self, num_points, sizes):
         super().__init__()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.extra = extra
+        self.extra = GlobalTransform(3,None,sizes,False)
+        self.bn1 = torch.nn.BatchNorm1d(64)
+        self.bn2 = torch.nn.BatchNorm1d(128)
+        self.bn3 = torch.nn.BatchNorm1d(1024)
+
+        self.num_points = num_points
+
+    def forward(self, x):
+        inp = x
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x128 = x
+        x = self.bn3(self.conv3(x))
+        x, _ = torch.max(x, 2)
+        x = x.view(-1, 1024)
+        x = self.extra(x128,inp,x)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.bn3(self.conv3(x))
+        x, _ = torch.max(x, 2)
+        x = x.view(-1, 1024)
+        return x, x128
+
+
+class PointNetfeatReturn2(nn.Module):
+    def __init__(self, num_points, sizes,latents):
+        super().__init__()
+        self.conv1 = torch.nn.Conv1d(3, 64, 1)
+        self.conv2 = torch.nn.Conv1d(64, 128, 1)
+        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
+        self.extra = GlobalTransformDepthSep(128,1028,sizes,latents,True)
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)
@@ -209,7 +239,7 @@ class PointNetfeatReturn2(nn.Module):
         x = self.bn3(self.conv3(x))
         x, _ = torch.max(x, 2)
         x = x.view(-1, 1024)
-        x128 = self.extra(x128,x128,x)
+        x128 = x128*0.9 + 0.1*self.extra(x128,x128,x)
         x = self.bn3(self.conv3(x128))
         x, _ = torch.max(x, 2)
         x = x.view(-1, 1024)

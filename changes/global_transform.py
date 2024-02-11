@@ -2,9 +2,9 @@ from nn_utils import *
 
 
 class GlobalTransform(nn.Module):
-    def __init__(self, bottleneck_size, partial_size, globalvsize, sizes, use_globalv=True):
+    def __init__(self, partial_size, x_size, globalvsize, sizes, use_globalv=True):
         super().__init__()
-        self.latents = partial_size
+        self.latents = x_size
         sizes = (partial_size,) + tuple(sizes) + (self.latents * self.latents,)
         self.convs = nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
@@ -130,7 +130,7 @@ class AdditionalEncoder(nn.Module):
         v = self.gt(v, v, x)
         v = self.convs2(v)
         softmaxweights = F.softmax(v, 2)
-        v = (softmaxweights * v).sum(2)
+        v = (softmaxweights * v).sum(2)*0.1
         return v+xfc
 
 class AdditionalEncoderIndentity(nn.Module):
