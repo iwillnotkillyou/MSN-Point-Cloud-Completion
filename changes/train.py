@@ -1,19 +1,10 @@
-import open3d as o3d
-import argparse
 import random
-import numpy as np
-import torch
 import torch.optim as optim
-import sys
 from transfered_model import *
 from model import *
 from utils import *
 import os
 import json
-import time, datetime
-from time import time
-import emd.emd_module as emd
-from tqdm import tqdm
 
 torch.cuda.empty_cache()
 import gc
@@ -52,7 +43,7 @@ def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defau
       except:
           usefirstorder = True
   if usefirstorder:
-      optimizer = optim.Adam(model.parameters(), lr = lrate)
+      optimizer = optim.Adam(network.parameters(), lr = lrate)
   train_curve = []
   val_curve = []
   train_curvecd = []
@@ -85,14 +76,14 @@ def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defau
         train_losscd = np.zeros(len(dataloader))
         val_losscd = np.zeros(len(dataloader_val))
         #TRAIN MODE
-        model.train()
+        network.train()
 
         # learning rate schedule
         if usefirstorder:
           if epoch==3:
-              optimizer = optim.Adam(model.parameters(), lr = lrate/10.0)
+              optimizer = optim.Adam(network.parameters(), lr = lrate/10.0)
           if epoch==6:
-              optimizer = optim.Adam(model.parameters(), lr = lrate/100.0)
+              optimizer = optim.Adam(network.parameters(), lr = lrate/100.0)
         else:
               optimizer.lr = optimizer.lr*0.98
 
@@ -131,7 +122,7 @@ def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defau
 
         # VALIDATION
         if True:
-            model.eval()
+            network.eval()
             with torch.no_grad():
                 for i, data in enumerate(dataloader_val):
                     if args.epoch_iter_limit_val is not None and i > args.epoch_iter_limit_val:
@@ -165,7 +156,7 @@ def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defau
             if val_losscd[i] < best_val_loss:
               best_val_loss = val_losscd[i]
               print('saving net...')
-              torch.save(model.state_dict(), '%s/network.pth' % (dir_name))
+              torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
 
     logname = os.path.join(dir_name, 'log.txt')
     log_table = {
@@ -184,28 +175,3 @@ def trainFull(network, dir_name, val_only, args, lrate = 0.001, kfacargs = defau
     del(dataset_val)
     del(dataloader_val)
   return np.min(train_curve), np.min(val_curve), np.min(train_curvecd), np.min(val_curvecd)
-
-from copy import copy
-now = datetime.datetime.now()
-
-try:
-  del(embedder)
-except:
-  pass
-try:
-  del(model)
-except:
-  pass
-
-if False:
-  embedder = make_embedder(args) if should_embed else None
-  in_c = embedder.decoder[0].conv3.out_channels if should_embed else 256
-  print(in_c)
-  #args.model = "/content/drive/MyDrive/saved/model.py"
-  model = make_model(in_c, args)
-  cs = 0
-  for name, param in model.named_parameters():
-    if param.requires_grad:
-      cs += param.nelement()
-      print(name, cs)
-  train(embedder, model,save_path, args)

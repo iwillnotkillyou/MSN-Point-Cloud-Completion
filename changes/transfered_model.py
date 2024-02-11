@@ -32,6 +32,13 @@ class TransformMSN(nn.Module):
         self.res = PointNetRes()
         self.expansion = expansion.expansionPenaltyModule()
 
+    def changed_state_dict(self):
+        d = self.state_dict()
+        ks = ['additional_encoder', 'encoder_modif']
+        r = dict((k, d[k]) for k in ks)
+        print(r)
+        return r
+
     def forward(self, x):
         partial = x
         x, x1 = self.encoder[0](x)
