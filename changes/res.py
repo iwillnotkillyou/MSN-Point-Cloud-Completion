@@ -148,14 +148,9 @@ class PointGenConAppplyTransform(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.bn1(self.conv1(x)))
-        x, mem = self.transformf(x, None)
         x = F.relu(self.bn2(self.conv2(x)))
-        x, mem = self.transformf(x, mem)
         x = F.relu(self.bn3(self.conv3(x)))
-        x, mem = self.transformf(x, mem)
         x = self.th(self.conv4(x))
-        x, mem = self.transformf(x, mem)
-        del(mem)
         return x
 
 
@@ -193,3 +188,29 @@ class ResSizes(nn.Module):
         x = self.convsdown(x)
         x = self.th(self.bnlast(self.convlast(x)))
         return x
+
+class PointNetfeatReturn2(nn.Module):
+    def __init__(self, num_points, extra):
+        super().__init__()
+        self.conv1 = torch.nn.Conv1d(3, 64, 1)
+        self.conv2 = torch.nn.Conv1d(64, 128, 1)
+        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
+        self.extra = extra
+        self.bn1 = torch.nn.BatchNorm1d(64)
+        self.bn2 = torch.nn.BatchNorm1d(128)
+        self.bn3 = torch.nn.BatchNorm1d(1024)
+
+        self.num_points = num_points
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x128 = x
+        x = self.bn3(self.conv3(x))
+        x, _ = torch.max(x, 2)
+        x = x.view(-1, 1024)
+        x128 = self.extra(x128,x128,x)
+        x = self.bn3(self.conv3(x128))
+        x, _ = torch.max(x, 2)
+        x = x.view(-1, 1024)
+        return x, x128
