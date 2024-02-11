@@ -9,14 +9,9 @@ import torch.optim as optim
 from torch.autograd import Variable
 import os
 from collections import defaultdict
-import h5py
 from multiprocessing import Queue
 from data_process import kill_data_processes
 from shapenet import ShapenetDataProcess
-import subprocess
-import hp5
-import sys
-import pytorch._init_paths
 
 def data_setup(args, phase, num_workers, repeat):
     if args.dataset == 'shapenet':
