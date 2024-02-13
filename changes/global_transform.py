@@ -8,14 +8,12 @@ class GlobalTransformDepthSep(nn.Module):
         sizes = (partial_size,) + tuple(sizes) + (self.latents * self.latents,)
         self.convs = nn.ModuleList([nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
                                     for i in range(partial_size // latents)])
-        self.transform_extractor = BatchNormConv1DNoAct(self.latents * self.latents, self.latents * self.latents)
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
         self.use_globalv = use_globalv
         if self.use_globalv:
-            self.fcs = nn.ModuleList([nn.Sequential(*make([self.latents * self.latents + globalvsize,
+            self.fcs = nn.Sequential(*make([self.latents * self.latents + globalvsize,
                                                            self.latents * self.latents],
-                                                          lambda x, y: LinearBNRelu(x, y))) for i in
-                                      range(partial_size // latents)])
+                                                          lambda x, y: LinearBNRelu(x, y)))
 
     def forward(self, partial, x, globalv):
         """
@@ -34,9 +32,9 @@ class GlobalTransformDepthSep(nn.Module):
         for i in range(x.shape[1]):
             transform_select = self.convs[i](partial)
             softmaxweights = F.softmax(transform_select, 2)
-            transform = (softmaxweights * self.transform_extractor(transform_select)).sum(2)
+            transform = (softmaxweights * transform_select).sum(2)
             if self.use_globalv:
-                transform = self.fcs[i](torch.cat([transform, globalv], 1))
+                transform = self.fcs(torch.cat([transform, globalv], 1))
             transform = transform.view(-1, self.latents, self.latents)
             identity = torch.broadcast_to(self.identity.unsqueeze(0),
                                           (bs, self.identity.shape[0], self.identity.shape[1]))

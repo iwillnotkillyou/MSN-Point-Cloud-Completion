@@ -3,12 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.utils.data
-from torch.autograd import Variable
-import numpy as np
 import torch.nn.functional as F
-import sys
-import expansion_penalty.expansion_penalty_module as expansion
-import MDS.MDS_module as MDS_module
 from model import *
 
 

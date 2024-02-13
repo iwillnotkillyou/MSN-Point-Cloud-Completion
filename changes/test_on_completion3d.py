@@ -1,18 +1,8 @@
-import os
-import torch
-import time
 import numpy as np
-import json
-import logging
 from tqdm import tqdm
-import torch.optim as optim
-from torch.autograd import Variable
-import os
-from collections import defaultdict
 from multiprocessing import Queue
 from data_process import kill_data_processes
 from shapenet import ShapenetDataProcess
-from my_chamfer_interface import chamferDist
 
 def data_setup(args, phase, num_workers, repeat):
     if args.dataset == 'shapenet':
