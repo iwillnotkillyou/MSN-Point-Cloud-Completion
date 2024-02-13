@@ -1,37 +1,4 @@
 from nn_utils import *
-
-
-class GlobalTransform(nn.Module):
-    def __init__(self, partial_size, x_size, globalvsize, sizes, use_globalv=True):
-        super().__init__()
-        self.latents = x_size
-        sizes = (partial_size,) + tuple(sizes) + (self.latents * self.latents,)
-        self.convs = nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
-        self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
-        self.transform_extractor = LinearBN(self.latents * self.latents, self.latents * self.latents)
-        self.use_globalv = use_globalv
-        if self.use_globalv:
-            self.fcs = nn.Sequential(*make([globalvsize + self.latents * self.latents, self.latents * self.latents],
-                                           lambda x, y: nn.Sequential(torch.nn.Linear(x, y),
-                                                                      torch.nn.BatchNorm1d(y),
-                                                                      torch.nn.ReLU())))
-
-    def forward(self, partial, x, globalv):
-        bs = x.shape[0]
-        if len(x.shape) == 2:
-            x = x.unsqueeze(2)
-        transform_pre = self.convs(partial)
-        softmaxweights = F.softmax(transform_pre, 2)
-        transform = (softmaxweights * self.transform_extractor(transform_pre)).sum(2)
-        if self.use_globalv:
-            transform = self.fcs(torch.cat([transform, globalv],1))
-        transform = transform.view(-1, self.latents, self.latents)
-        identity = torch.broadcast_to(self.identity.unsqueeze(0),
-                                      (bs, self.identity.shape[0], self.identity.shape[1]))
-        transform = transform + identity
-        return torch.matmul(transform, x)
-
-
 class GlobalTransformDepthSep(nn.Module):
     def __init__(self, partial_size, globalvsize, sizes, latents, use_globalv=True):
         super().__init__()
