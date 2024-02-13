@@ -54,18 +54,26 @@ class SimpleLocallyConnected1d(nn.Module):
 
 
 class BatchNormLocalConv1D(nn.Module):
-    def __init__(self, in_channels, out_channels, output_size, kernel_size=1, stride=1):
+    def __init__(self, in_channels, out_channels, output_size):
         super().__init__()
-        self.conv = LocallyConnected1d(in_channels, out_channels, output_size, False, kernel_size, stride)
+        self.conv = SimpleLocallyConnected1d(in_channels, out_channels, output_size, False)
         self.bn = torch.nn.BatchNorm1d(out_channels)
 
     def forward(self, x):
         return F.relu(self.bn(self.conv(x)))
 
+class BatchNormConv1DNoAct(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1):
+        super().__init__()
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride)
+        self.bn = torch.nn.BatchNorm1d(out_channels)
+
+    def forward(self, x):
+        return self.bn(self.conv(x))
 
 class BatchNormConv1D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1):
-        super(BatchNormConv1D, self).__init__()
+        super().__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride)
         self.bn = torch.nn.BatchNorm1d(out_channels)
 
@@ -75,7 +83,7 @@ class BatchNormConv1D(nn.Module):
 
 class BatchNormConv1DTransformer(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1):
-        super(BatchNormConv1DTransformer, self).__init__()
+        super().__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride)
         self.bn = torch.nn.BatchNorm1d(out_channels)
 
