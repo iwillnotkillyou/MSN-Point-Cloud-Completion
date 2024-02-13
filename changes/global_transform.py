@@ -1,4 +1,6 @@
 from nn_utils import *
+
+
 class GlobalTransformDepthSep(nn.Module):
     def __init__(self, partial_size, globalvsize, sizes, latents, use_globalv=True):
         super().__init__()
@@ -10,8 +12,10 @@ class GlobalTransformDepthSep(nn.Module):
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
         self.use_globalv = use_globalv
         if self.use_globalv:
-            self.fcs = nn.ModuleList([nn.Sequential(*make([self.latents * self.latents + globalvsize, self.latents * self.latents],
-                                           lambda x, y: LinearBNRelu(x, y))) for i in range(partial_size // latents)])
+            self.fcs = nn.ModuleList([nn.Sequential(*make([self.latents * self.latents + globalvsize,
+                                                           self.latents * self.latents],
+                                                          lambda x, y: LinearBNRelu(x, y))) for i in
+                                      range(partial_size // latents)])
 
     def forward(self, partial, x, globalv):
         """
@@ -39,6 +43,7 @@ class GlobalTransformDepthSep(nn.Module):
             transform = transform + identity
             outs.append(torch.matmul(transform, x[:, i, :, :]))
         return torch.cat(outs, 1)
+
 
 class GlobalAdditiveGeneral(nn.Module):
     def __init__(self, bottleneck_size, partial_size, globalvsize, sizes, latents):

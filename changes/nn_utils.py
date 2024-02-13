@@ -11,24 +11,27 @@ import expansion_penalty.expansion_penalty_module as expansion
 import MDS.MDS_module as MDS_module
 from model import *
 
+
 class LinearBNRelu(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.m = nn.Sequential(torch.nn.Linear(in_channels, out_channels),
-                      torch.nn.BatchNorm1d(out_channels),
-                      torch.nn.ReLU())
+                               torch.nn.BatchNorm1d(out_channels),
+                               torch.nn.ReLU())
 
     def forward(self, x):
         return self.m(x)
+
 
 class LinearBN(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.m = nn.Sequential(torch.nn.Linear(in_channels, out_channels),
-                      torch.nn.BatchNorm1d(out_channels))
+                               torch.nn.BatchNorm1d(out_channels))
 
     def forward(self, x):
         return self.m(x)
+
 
 class SimpleLocallyConnected1d(nn.Module):
     def __init__(self, in_channels, out_channels, output_size, bias=False):

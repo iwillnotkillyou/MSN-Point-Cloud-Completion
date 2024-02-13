@@ -5,17 +5,20 @@ import torchvision.transforms as transforms
 import os
 import random
 import open3d
-#from utils import *
+
+
+# from utils import *
 
 def resample_pcd(pcd, n):
     """Drop or duplicate points so that pcd has exactly n points"""
     idx = np.random.permutation(pcd.shape[0])
     if idx.shape[0] < n:
-        idx = np.concatenate([idx, np.random.randint(pcd.shape[0], size = n - pcd.shape[0])])
+        idx = np.concatenate([idx, np.random.randint(pcd.shape[0], size=n - pcd.shape[0])])
     return pcd[idx[:n]]
 
+
 class ShapeNet(data.Dataset):
-    def __init__(self, train = True, npoints = 8192):
+    def __init__(self, train=True, npoints=8192):
         if train:
             self.list_path = './data/train.list'
         else:
@@ -31,9 +34,11 @@ class ShapeNet(data.Dataset):
     def __getitem__(self, index):
         model_id = self.model_list[index // 50]
         scan_id = index % 50
+
         def read_pcd(filename):
             pcd = open3d.io.read_point_cloud(filename)
             return torch.from_numpy(np.array(pcd.points)).float()
+
         if self.train:
             partial = read_pcd(os.path.join("./data/train/", model_id + '_%d_denoised.pcd' % scan_id))
         else:
@@ -44,6 +49,7 @@ class ShapeNet(data.Dataset):
     def __len__(self):
         return self.len
 
+
 class EmbeddingsDataset(torch.utils.data.Dataset):
     def __init__(self, folder, embedder_batch_size, transform=None):
         self.folder = folder
@@ -52,13 +58,13 @@ class EmbeddingsDataset(torch.utils.data.Dataset):
         self.embedder_batch_size = embedder_batch_size
 
     def __len__(self):
-        return len(self.files*self.embedder_batch_size)
+        return len(self.files * self.embedder_batch_size)
 
     def __getitem__(self, idx):
         id, x, target = torch.load(f"{self.folder}/{self.files[idx // self.embedder_batch_size]}")
         i = idx % self.embedder_batch_size
         try:
-          r = id[i], (x[0][i], x[1][i]), target[i]
+            r = id[i], (x[0][i], x[1][i]), target[i]
         except:
-          print(x[0].shape, x[1].shape)
+            print(x[0].shape, x[1].shape)
         return r
