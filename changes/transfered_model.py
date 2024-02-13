@@ -15,9 +15,9 @@ from global_transform import *
 
 
 class TransformMSN(nn.Module):
-    def __init__(self, additional_encoderf, pointnetfeatf):
+    def __init__(self, additional_encoderf, pointnetfeatf, num_points):
         super().__init__()
-        self.num_points = 8192
+        self.num_points = num_points
         self.bottleneck_size = 1024
         self.n_primitives = 16
         self.additional_encoder = additional_encoderf()
