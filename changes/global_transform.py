@@ -13,7 +13,7 @@ class GlobalTransformDepthSep(nn.Module):
         if self.use_globalv:
             self.fcs = nn.Sequential(*make([self.latents * self.latents + globalvsize,
                                                            self.latents * self.latents],
-                                                          lambda x, y: LinearBNRelu(x, y)))
+                                                          lambda x, y: LinearBN(x, y)))
 
     def forward(self, partial, x, globalv):
         """
@@ -42,31 +42,6 @@ class GlobalTransformDepthSep(nn.Module):
             outs.append(torch.matmul(transform, x[:, i, :, :]))
         return torch.cat(outs, 1)
 
-
-class GlobalAdditiveGeneral(nn.Module):
-    def __init__(self, bottleneck_size, partial_size, globalvsize, sizes, latents):
-        super().__init__()
-        self.bottleneck_size = bottleneck_size
-        self.latents = latents
-        sizes = (partial_size,) + tuple(sizes) + (bottleneck_size,)
-        self.convs = nn.Sequential(*make(sizes, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
-        self.usefcs = True
-        if self.usefcs:
-            self.fcs = nn.Sequential(*make([globalvsize, bottleneck_size * bottleneck_size, bottleneck_size],
-                                           lambda x, y: LinearBNRelu(x, y)))
-
-    def forward(self, x, globalv):
-        v = self.convs(x)
-        softmaxweights = F.softmax(v, 2)
-        v = (softmaxweights * v).sum(2)
-        if self.usefcs:
-            v = v + self.fcs(globalv)
-        os = x.shape
-        if len(x.shape) < 2:
-            x = x.unsqueeze(2)
-        return (v.unsqueeze(2).broadcast_to(x.shape) + x).reshape(os)
-
-
 class AdditionalEncoder1(nn.Module):
     def __init__(self, sizes, latents, bottleneck_size, output_size=1024):
         super().__init__()
@@ -94,13 +69,14 @@ class AdditionalEncoder(nn.Module):
     def __init__(self, sizes, latents, out_size = 1024):
         super().__init__()
         sizes1 = (3 + 128,) + tuple(sizes[:-1])
-        bottleneck_size = out_size//4
-        sizes2 = tuple(sizes[-2:]) + (bottleneck_size,)
-        self.extractor = BatchNormConv1D(out_size,out_size)
-        self.transform_extractor = nn.BatchNorm1d(out_size) if True else LinearBN(out_size, bottleneck_size)
+        bottleneck_size = sizes[-1]
+        sizes2 = tuple(sizes[-2:])
+        self.extractor = nn.Identity() if True else BatchNormConv1D(bottleneck_size, bottleneck_size)
+        self.transform_extractor = nn.BatchNorm1d(out_size) if True else LinearBN(bottleneck_size, out_size)
         self.convs1 = nn.Sequential(*make(sizes1, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.gt = GlobalTransformDepthSep(sizes[-2], out_size, (3 + 128,), latents)
+
 
     def forward(self, partial3, partial128, x, xfc):
         partial = torch.cat([partial3, partial128], 1)
