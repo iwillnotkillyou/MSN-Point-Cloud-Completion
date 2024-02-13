@@ -91,15 +91,15 @@ class AdditionalEncoder1(nn.Module):
 
 
 class AdditionalEncoder(nn.Module):
-    def __init__(self, sizes, latents, bottleneck_size, output_size=1024):
+    def __init__(self, sizes, latents, bottleneck_size = 1024):
         super().__init__()
         self.bottleneck_size = bottleneck_size
         sizes1 = (3 + 128,) + tuple(sizes[:-1])
         sizes2 = tuple(sizes[-2:]) + (bottleneck_size,)
-        self.transform_extractor = LinearBN(bottleneck_size, output_size)
+        self.transform_extractor = nn.BatchNorm1d(bottleneck_size)
         self.convs1 = nn.Sequential(*make(sizes1, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
-        self.gt = GlobalTransformDepthSep(sizes[-2], output_size, (3 + 128,), latents)
+        self.gt = GlobalTransformDepthSep(sizes[-2], bottleneck_size, (3 + 128,), latents)
 
     def forward(self, partial3, partial128, x, xfc):
         partial = torch.cat([partial3, partial128], 1)

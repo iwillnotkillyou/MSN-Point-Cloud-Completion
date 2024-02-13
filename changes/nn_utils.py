@@ -76,14 +76,14 @@ class BatchNormConv1D(nn.Module):
         return F.relu(self.bn(self.conv(x)))
 
 
-class BatchNormConv1DTransformer(nn.Module):
+def DepthSepPool():
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1):
         super().__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride)
         self.bn = torch.nn.BatchNorm1d(out_channels)
 
-    def forward(self, _, __, x):
-        return F.relu(self.bn(self.conv(x)))
+    def forward(self, x):
+        return self.bn(self.conv(x))
 
 
 def make(sizes, f, additional_args=None):

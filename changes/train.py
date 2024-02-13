@@ -50,6 +50,7 @@ def trainFull(network, dir_name, val_only, args, lrate=0.001, kfacargs=defaultKF
             usefirstorder = True
     if usefirstorder:
         optimizer = optim.Adam(network.parameters(), lr=lrate)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,0.98)
     train_curve = []
     val_curve = []
     train_curvecd = []
@@ -88,17 +89,14 @@ def trainFull(network, dir_name, val_only, args, lrate=0.001, kfacargs=defaultKF
             # learning rate schedule
             if usefirstorder:
                 if epoch == 1:
-                    lrate = lrate/ 2
-                    optimizer = optim.Adam(network.parameters(), lr=lrate)
+                    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,0.97)
                 if epoch == 2:
-                    lrate = lrate/ 2
-                    optimizer = optim.Adam(network.parameters(), lr=lrate)
+                    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,0.95)
 
             if not val_only:
                 for i, data in enumerate(dataloader, 0):
                     if usefirstorder:
-                        lrate = lrate*0.98
-                        optimizer = optim.Adam(network.parameters(), lr=lrate)
+                        lr_scheduler.step()
                     else:
                         optimizer.lr = optimizer.lr * 0.98
                     if args.epoch_iter_limit is not None and i > args.epoch_iter_limit:
