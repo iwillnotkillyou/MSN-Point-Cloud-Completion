@@ -11,31 +11,26 @@ import expansion_penalty.expansion_penalty_module as expansion
 import MDS.MDS_module as MDS_module
 from model import *
 
-
-class LocallyConnected1d():
-    def __init__(self, in_channels, out_channels, output_size, bias=False, kernel_size=1, stride=1):
+class LinearBNRelu(nn.Module):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.weight = nn.Parameter(
-            torch.randn(output_size, out_channels, in_channels * kernel_size)
-        )
-        if bias:
-            self.bias = nn.Parameter(
-                torch.randn(out_channels, output_size)
-            )
-        else:
-            self.register_parameter('bias', None)
+        self.m = nn.Sequential(torch.nn.Linear(in_channels, out_channels),
+                      torch.nn.BatchNorm1d(out_channels),
+                      torch.nn.ReLU())
 
     def forward(self, x):
-        x = x.unfold(1, self.kernel_size, self.stride)
-        out = torch.matmul(x.unsqueeze(2), self.weight).squeeze()
-        if self.bias is not None:
-            out += self.bias
-        return out
+        return self.m(x)
 
+class LinearBN(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.m = nn.Sequential(torch.nn.Linear(in_channels, out_channels),
+                      torch.nn.BatchNorm1d(out_channels))
 
-class SimpleLocallyConnected1d():
+    def forward(self, x):
+        return self.m(x)
+
+class SimpleLocallyConnected1d(nn.Module):
     def __init__(self, in_channels, out_channels, output_size, bias=False):
         super().__init__()
         self.weight = nn.Parameter(
