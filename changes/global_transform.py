@@ -72,7 +72,7 @@ class AdditionalEncoder(nn.Module):
         bottleneck_size = sizes[-1]
         sizes2 = tuple(sizes[-2:])
         self.extractor = nn.Identity() if True else BatchNormConv1D(bottleneck_size, bottleneck_size)
-        self.transform_extractor = nn.BatchNorm1d(out_size) if True else LinearBN(bottleneck_size, out_size)
+        self.transform_extractor = LinearBN(bottleneck_size, out_size)
         self.convs1 = nn.Sequential(*make(sizes1, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.convs2 = nn.Sequential(*make(sizes2, lambda x, y: nn.Sequential(BatchNormConv1D(x, y))))
         self.gt = GlobalTransformDepthSep(sizes[-2], out_size, (3 + 128,), latents)
