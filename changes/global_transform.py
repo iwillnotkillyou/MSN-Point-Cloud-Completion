@@ -84,7 +84,7 @@ class AdditionalEncoder(nn.Module):
         v = self.gt(v, v, x)
         v = self.convs2(v)
         softmaxweights = F.softmax(v, 2)
-        v = (softmaxweights * self.transform_extractor(v)).sum(2) * 0.1
+        v = (softmaxweights * self.transform_extractor(v)).sum(2)
         return v + xfc
 
 
