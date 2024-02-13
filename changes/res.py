@@ -195,7 +195,7 @@ class PointNetfeatReturn2TPartial(nn.Module):
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.extra = GlobalTransformDepthSep(128, 1024, sizes, 3, True)
+        self.extra = GlobalTransformIndentityGlobalV() if sizes is None else GlobalTransformDepthSep(128, 1024, sizes, 3, True)
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)

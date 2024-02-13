@@ -10,8 +10,8 @@ class GlobalTransformDepthSep(nn.Module):
         self.register_buffer('identity', torch.diag(torch.ones(self.latents)))
         self.use_globalv = use_globalv
         if self.use_globalv:
-            self.fcs = nn.Sequential(*make([self.latents * self.latents + globalvsize, self.latents * self.latents],
-                                           lambda x, y: LinearBNRelu(x, y)))
+            self.fcs = nn.ModuleList([nn.Sequential(*make([self.latents * self.latents + globalvsize, self.latents * self.latents],
+                                           lambda x, y: LinearBNRelu(x, y))) for i in range(partial_size // latents)])
 
     def forward(self, partial, x, globalv):
         """
