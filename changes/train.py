@@ -87,15 +87,20 @@ def trainFull(network, dir_name, val_only, args, lrate=0.001, kfacargs=defaultKF
 
             # learning rate schedule
             if usefirstorder:
-                if epoch == 3:
-                    optimizer = optim.Adam(network.parameters(), lr=lrate / 10.0)
-                if epoch == 6:
-                    optimizer = optim.Adam(network.parameters(), lr=lrate / 100.0)
-            else:
-                optimizer.lr = optimizer.lr * 0.98
+                if epoch == 1:
+                    lrate = lrate/ 2
+                    optimizer = optim.Adam(network.parameters(), lr=lrate)
+                if epoch == 2:
+                    lrate = lrate/ 2
+                    optimizer = optim.Adam(network.parameters(), lr=lrate)
 
             if not val_only:
                 for i, data in enumerate(dataloader, 0):
+                    if usefirstorder:
+                        lrate = lrate*0.98
+                        optimizer = optim.Adam(network.parameters(), lr=lrate)
+                    else:
+                        optimizer.lr = optimizer.lr * 0.98
                     if args.epoch_iter_limit is not None and i > args.epoch_iter_limit:
                         break
                     optimizer.zero_grad()
