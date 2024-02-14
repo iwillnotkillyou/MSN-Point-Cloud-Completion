@@ -18,11 +18,12 @@ def resample_pcd(pcd, n):
 
 def loadSplit(list_path):
     with open(os.path.join(list_path)) as file:
-        return [line.strip() for line in file]
+        v = [line.strip() for line in file]
+        return v
 
 def saveSplit(list_path, model_list):
-    with open(os.path.join(list_path)) as file:
-        file.writelines([model_id for model_id in model_list])
+    with open(os.path.join(list_path), 'w') as file:
+        file.writelines([f"{model_id}\n" for model_id in model_list])
 
 class ShapeNet(data.Dataset):
     def __init__(self, list_path, npoints=8192):
@@ -40,7 +41,7 @@ class ShapeNet(data.Dataset):
             pcd = open3d.io.read_point_cloud(filename)
             return torch.from_numpy(np.array(pcd.points)).float()
 
-        partial = read_pcd(os.path.join("./data/partial", model_id + '_%d_denoised.pcd' % scan_id))
+        partial = read_pcd(os.path.join("./data/val/", model_id + '_%d_denoised.pcd' % scan_id))
         complete = read_pcd(os.path.join("./data/complete/", '%s.pcd' % model_id))
         return model_id, resample_pcd(partial, 5000), resample_pcd(complete, self.npoints)
 

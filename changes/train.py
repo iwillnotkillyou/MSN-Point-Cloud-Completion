@@ -36,8 +36,8 @@ def make_data_splits(args, trainp = './data/train.list',
     perc_train = (1 - args.perc_val_data) * args.perc_data
     perc_val = args.perc_val_data * args.perc_data
     model_list = loadSplit('./data/all.list')
-    tvsplitpos = perc_train * len(model_list)
-    vtsplitpos = perc_val * len(model_list)
+    tvsplitpos = int(perc_train * len(model_list))
+    vtsplitpos = int((perc_train+perc_val) * len(model_list))
     random.shuffle(model_list)
     saveSplit(trainp, model_list[:tvsplitpos])
     saveSplit(valp, model_list[tvsplitpos:vtsplitpos])
@@ -76,7 +76,10 @@ def validate(network, dataloader, num_its_emd, iter_limit):
     return cd, emd1mi, emd2mi, exppmi
 
 
-def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
+def batchnum(epoch,batchind, loader):
+    return len(loader)*epoch+batchind
+
+def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=defaultKFACargs,
               trainp='./data/train.list',
               valp='./data/val.list'):
     torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
@@ -102,6 +105,7 @@ def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
     val_curve = []
     train_curvecd = []
     val_curvecd = []
+    val_batches = []
     labels_generated_points = (
         torch.Tensor(range(1, (args.n_primitives + 1) * (args.num_points // args.n_primitives) + 1))
         .view(args.num_points // args.n_primitives, (args.n_primitives + 1)).transpose(0, 1))
@@ -124,10 +128,8 @@ def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
     print("Train Set Size: ", len_dataset)
     try:
         for epoch in range(args.nepoch):
-            train_loss = np.zeros(len(dataloader))
-            val_loss = np.zeros(len(dataloader_val))
-            train_losscd = np.zeros(len(dataloader))
-            val_losscd = np.zeros(len(dataloader_val))
+            train_loss = np.zeros(logevery)
+            train_losscd = np.zeros(logevery)
             # TRAIN MODE
             network.train()
 
@@ -139,6 +141,7 @@ def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
                     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.95)
 
             for i, data in enumerate(dataloader, 0):
+                batch_number = batchnum(epoch, 0, dataloader)
                 if usefirstorder:
                     lr_scheduler.step()
                 else:
@@ -159,8 +162,8 @@ def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
                 exppmi = exppm.item()
                 loss_net = emd1m + emd2m + exppm * 0.1
                 dist1, dist2 = chamferDist()(output2.float(), gt)
-                train_losscd[i] = torch.mean(dist2) + torch.mean(dist1)
-                train_loss[i] = emd2mi
+                train_losscd[batch_number % logevery] = torch.mean(dist2) + torch.mean(dist1)
+                train_loss[batch_number % logevery] = emd2mi
                 loss_net.backward()
                 optimizer.step()
 
@@ -170,42 +173,39 @@ def trainFull(network, dir_name, args, lrate=0.001, kfacargs=defaultKFACargs,
                 del (input)
                 del (output1)
                 del (output2)
-            train_curve.append(np.mean(train_loss))
-            train_curvecd.append(np.mean(train_losscd))
+                if batch_number % logevery == 0:
+                    cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
+                    best_val_loss = min(best_val_loss, cd)
+                    print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
+                          % (epoch, 0, len_val_dataset / args.batchSize, emd1mi,
+                             emd2mi, exppmi, cd))
+                    train_curve.append(np.mean(train_loss))
+                    train_curvecd.append(np.mean(train_losscd))
+                    val_curve.append(np.mean(emd2mi))
+                    val_curvecd.append(np.mean(cd))
 
-            cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
-            val_losscd[i] = cd
-            val_loss[i] = emd2mi
-            best_val_loss = min(best_val_loss, val_losscd[i])
-            idx = random.randint(0, input.size()[0] - 1)
-            print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
-                  % (epoch, i, len_val_dataset / args.batchSize, emd1mi,
-                     emd2mi, exppmi, val_losscd[i]))
+                if not os.path.exists(dir_name):
+                    os.mkdir(dir_name)
+                if emd2mi < best_val_loss:
+                    best_val_loss = emd2mi
+                    print('saving net...')
+                    torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
 
-            val_curve.append(np.mean(val_loss))
-            val_curvecd.append(np.mean(val_losscd))
+                logname = os.path.join(dir_name, 'log.txt')
+                log_table = {
+                    "train_loss": np.mean(train_loss),
+                    "val_loss": cd,
+                    "epoch": epoch,
+                    "lr": lrate,
+                    "bestval": best_val_loss,
 
-            if not os.path.exists(dir_name):
-                os.mkdir(dir_name)
-            if val_losscd[i] < best_val_loss:
-                best_val_loss = val_losscd[i]
-                print('saving net...')
-                torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
+                }
+                with open(logname, 'a') as f:
+                    f.write('json_stats: ' + json.dumps(log_table) + '\n')
 
-        logname = os.path.join(dir_name, 'log.txt')
-        log_table = {
-            "train_loss": np.mean(train_loss),
-            "val_loss": np.mean(val_loss),
-            "epoch": epoch,
-            "lr": lrate,
-            "bestval": best_val_loss,
-
-        }
-        with open(logname, 'a') as f:
-            f.write('json_stats: ' + json.dumps(log_table) + '\n')
     finally:
         del (dataset)
         del (dataloader)
         del (dataset_val)
         del (dataloader_val)
-    return np.min(train_curve), np.min(val_curve), np.min(train_curvecd), np.min(val_curvecd)
+    return np.stack(np.array(train_curve), np.array(val_curve), np.array(train_curvecd), np.array(val_curvecd))
