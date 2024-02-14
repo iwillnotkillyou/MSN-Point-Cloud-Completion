@@ -141,7 +141,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.95)
 
             for i, data in enumerate(dataloader, 0):
-                batch_number = batchnum(epoch, 0, dataloader)
+                batch_number = batchnum(epoch, i, dataloader)
                 if usefirstorder:
                     lr_scheduler.step()
                 else:
@@ -179,7 +179,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
                     best_val_loss = min(best_val_loss, cd)
                     print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
-                          % (epoch, 0, len_val_dataset / args.batchSize, emd1mi,
+                          % (epoch, i, len_val_dataset / args.batchSize, emd1mi,
                              emd2mi, exppmi, cd))
                     print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}")
                     train_curve.append(np.mean(train_loss))
@@ -187,24 +187,24 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     val_curve.append(np.mean(emd2mi))
                     val_curvecd.append(np.mean(cd))
 
-                if not os.path.exists(dir_name):
-                    os.mkdir(dir_name)
-                if emd2mi < best_val_loss:
-                    best_val_loss = emd2mi
-                    print('saving net...')
-                    torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
+                    if not os.path.exists(dir_name):
+                        os.mkdir(dir_name)
+                    if emd2mi < best_val_loss:
+                        best_val_loss = emd2mi
+                        print('saving net...')
+                        torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
 
-                logname = os.path.join(dir_name, 'log.txt')
-                log_table = {
-                    "train_loss": np.mean(train_loss),
-                    "val_loss": cd,
-                    "epoch": epoch,
-                    "lr": lrate,
-                    "bestval": best_val_loss,
+                    logname = os.path.join(dir_name, 'log.txt')
+                    log_table = {
+                        "train_loss": np.mean(train_loss),
+                        "val_loss": cd,
+                        "epoch": epoch,
+                        "lr": lrate,
+                        "bestval": best_val_loss,
 
-                }
-                with open(logname, 'a') as f:
-                    f.write('json_stats: ' + json.dumps(log_table) + '\n')
+                    }
+                    with open(logname, 'a') as f:
+                        f.write('json_stats: ' + json.dumps(log_table) + '\n')
 
     finally:
         del (dataset)
