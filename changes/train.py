@@ -162,7 +162,12 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                 exppmi = exppm.item()
                 loss_net = emd1m + emd2m + exppm * 0.1
                 dist1, dist2 = chamferDist()(output2.float(), gt)
-                train_losscd[batch_number % logevery] = torch.mean(dist2) + torch.mean(dist1)
+                cd = torch.mean(dist2) + torch.mean(dist1)
+                if batch_number % logevery == 0:
+                    print(args.env + ' train [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
+                          % (epoch, i, len_dataset / args.batchSize, emd1mi, emd2mi,
+                             exppmi, cd))
+                train_losscd[batch_number % logevery] = cd
                 train_loss[batch_number % logevery] = emd2mi
                 loss_net.backward()
                 optimizer.step()
@@ -173,9 +178,6 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                 if batch_number % logevery == 0:
                     cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
                     best_val_loss = min(best_val_loss, cd)
-                    print(args.env + ' train [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
-                          % (epoch, i, len_dataset / args.batchSize, emd1mi, emd2mi,
-                             exppmi, train_losscd[i]))
                     print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
                           % (epoch, 0, len_val_dataset / args.batchSize, emd1mi,
                              emd2mi, exppmi, cd))
