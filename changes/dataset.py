@@ -16,33 +16,31 @@ def resample_pcd(pcd, n):
         idx = np.concatenate([idx, np.random.randint(pcd.shape[0], size=n - pcd.shape[0])])
     return pcd[idx[:n]]
 
+def loadSplit(list_path):
+    with open(os.path.join(list_path)) as file:
+        return [line.strip() for line in file]
+
+def saveSplit(list_path, model_list):
+    with open(os.path.join(list_path)) as file:
+        file.writelines([model_id for model_id in model_list])
 
 class ShapeNet(data.Dataset):
-    def __init__(self, train=True, npoints=8192):
-        if train:
-            self.list_path = './data/train.list'
-        else:
-            self.list_path = './data/val.list'
+    def __init__(self, list_path, npoints=8192):
+        self.list_path = list_path
         self.npoints = npoints
-        self.train = train
-
-        with open(os.path.join(self.list_path)) as file:
-            self.model_list = [line.strip().replace('/', '_') for line in file]
+        self.model_list = loadSplit(self.list_path)
         random.shuffle(self.model_list)
         self.len = len(self.model_list * 50)
 
     def __getitem__(self, index):
-        model_id = self.model_list[index // 50]
+        model_id = self.model_list[index // 50].replace('/', '_')
         scan_id = index % 50
 
         def read_pcd(filename):
             pcd = open3d.io.read_point_cloud(filename)
             return torch.from_numpy(np.array(pcd.points)).float()
 
-        if self.train:
-            partial = read_pcd(os.path.join("./data/train/", model_id + '_%d_denoised.pcd' % scan_id))
-        else:
-            partial = read_pcd(os.path.join("./data/val/", model_id + '_%d_denoised.pcd' % scan_id))
+        partial = read_pcd(os.path.join("./data/partial", model_id + '_%d_denoised.pcd' % scan_id))
         complete = read_pcd(os.path.join("./data/complete/", '%s.pcd' % model_id))
         return model_id, resample_pcd(partial, 5000), resample_pcd(complete, self.npoints)
 
