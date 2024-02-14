@@ -167,18 +167,19 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                 loss_net.backward()
                 optimizer.step()
 
-                print(args.env + ' train [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
-                      % (epoch, i, len_dataset / args.batchSize, emd1mi, emd2mi,
-                         exppmi, train_losscd[i]))
                 del (input)
                 del (output1)
                 del (output2)
                 if batch_number % logevery == 0:
                     cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
                     best_val_loss = min(best_val_loss, cd)
+                    print(args.env + ' train [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
+                          % (epoch, i, len_dataset / args.batchSize, emd1mi, emd2mi,
+                             exppmi, train_losscd[i]))
                     print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
                           % (epoch, 0, len_val_dataset / args.batchSize, emd1mi,
                              emd2mi, exppmi, cd))
+                    print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}")
                     train_curve.append(np.mean(train_loss))
                     train_curvecd.append(np.mean(train_losscd))
                     val_curve.append(np.mean(emd2mi))
