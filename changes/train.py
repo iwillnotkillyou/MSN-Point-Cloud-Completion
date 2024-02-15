@@ -192,9 +192,10 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                         os.makedirs(dir_name, exist_ok=True)
                     np.save(f"{dir_name}/curves", curves)
 
-                    if batch_number % logevery == 0:
+                    if batch_number % logevery*2 == 0:
                         print(f'saving net... this {emd2mi} best {best_val_loss}')
                         torch.save(network.model.state_dict(), f'{dir_name}/network{batch_number}.pth')
+                        torch.save(network.model.state_dict(), f'{dir_name}/network.pth')
 
                     logname = os.path.join(dir_name, 'log.txt')
                     log_table = {
