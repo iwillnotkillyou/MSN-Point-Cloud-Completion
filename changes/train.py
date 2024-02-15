@@ -82,7 +82,6 @@ def batchnum(epoch,batchind, loader):
 def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=defaultKFACargs,
               trainp='./data/train.list',
               valp='./data/val.list'):
-    torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
     startt = time.process_time()
     def optimf(lr):
         return optims.KFAC(lr, kfacargs.momentum, kfacargs.cov_ema_decay,
