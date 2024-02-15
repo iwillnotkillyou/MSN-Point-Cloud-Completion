@@ -185,7 +185,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     train_curvecd.append(np.mean(train_losscd))
                     val_curve.append(np.mean(emd2mi))
                     val_curvecd.append(np.mean(cd))
-                    curves = np.stack(np.array(train_curve), np.array(val_curve), np.array(train_curvecd), np.array(val_curvecd))
+                    curves = np.stack([np.array(train_curve), np.array(val_curve), np.array(train_curvecd), np.array(val_curvecd)])
 
 
                     if not os.path.exists(dir_name):
