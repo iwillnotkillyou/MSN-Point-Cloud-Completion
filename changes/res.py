@@ -276,7 +276,8 @@ class PointNetfeatFreeze(nn.Module):
     def forward(self, x):
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
+        x128 = x
         x = self.bn3(self.conv3(x))
         x, _ = torch.max(x, 2)
         x = x.view(-1, 1024)
-        return x
+        return x, x128
