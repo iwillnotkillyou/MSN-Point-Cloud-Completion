@@ -13,7 +13,7 @@ import MDS.MDS_module as MDS_module
 
 class PointNetfeat(nn.Module):
     def __init__(self):
-        super(PointNetfeat, self).__init__()
+        super().__init__()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
@@ -35,7 +35,7 @@ class PointNetfeat(nn.Module):
 class PointGenCon(nn.Module):
     def __init__(self, bottleneck_size=8192):
         self.bottleneck_size = bottleneck_size
-        super(PointGenCon, self).__init__()
+        super().__init__()
         self.conv1 = torch.nn.Conv1d(self.bottleneck_size, self.bottleneck_size, 1)
         self.conv2 = torch.nn.Conv1d(self.bottleneck_size, self.bottleneck_size // 2, 1)
         self.conv3 = torch.nn.Conv1d(self.bottleneck_size // 2, self.bottleneck_size // 4, 1)
@@ -57,7 +57,7 @@ class PointGenCon(nn.Module):
 
 class PointNetRes(nn.Module):
     def __init__(self):
-        super(PointNetRes, self).__init__()
+        super().__init__()
         self.conv1 = torch.nn.Conv1d(4, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
@@ -95,7 +95,7 @@ class PointNetRes(nn.Module):
 
 class MSN(nn.Module):
     def __init__(self, num_points=8192, bottleneck_size=1024, n_primitives=16):
-        super(MSN, self).__init__()
+        super().__init__()
         self.num_points = num_points
         self.bottleneck_size = bottleneck_size
         self.n_primitives = n_primitives
