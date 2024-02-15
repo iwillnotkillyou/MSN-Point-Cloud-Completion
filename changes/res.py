@@ -238,7 +238,7 @@ class PointNetfeatReturn2(nn.Module):
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)
-\
+
     def freeze(self):
         for param in self.parameters():
             param.requires_grad = False
