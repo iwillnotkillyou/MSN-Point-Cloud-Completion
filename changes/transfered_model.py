@@ -37,7 +37,10 @@ class TransformMSN(nn.Module):
 
     def freeze(self):
         if not self.train_encoder:
-            self.encoder.freeze()
+            self.encoder[0].freeze()
+            for i in range(1,len(self.encoder)):
+              for param in self.encoder[i].parameters():
+                  param.requires_grad = False
         for param in self.decoder.parameters():
             param.requires_grad = False
         for param in self.res.parameters():
