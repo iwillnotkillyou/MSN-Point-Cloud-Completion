@@ -189,7 +189,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
 
 
                     if not os.path.exists(dir_name):
-                        os.mkdir(dir_name)
+                        os.makedirs(dir_name, exist_ok=True)
                     np.save(f"{dir_name}/curves", curves)
                     if emd2mi < best_val_loss:
                         best_val_loss = emd2mi
