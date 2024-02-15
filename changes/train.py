@@ -8,7 +8,7 @@ import json
 from dataset import *
 from my_chamfer_interface import chamferDist
 import gc
-
+import time
 
 class KFACargs:
     def __init__(self, momentum, cov_ema_decay, damping, stab_coeff, use_cholesky, adjust_momentum,
@@ -83,7 +83,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
               trainp='./data/train.list',
               valp='./data/val.list'):
     torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
-
+    startt = time.clock()
     def optimf(lr):
         return optims.KFAC(lr, kfacargs.momentum, kfacargs.cov_ema_decay,
                            kfacargs.damping, kfacargs.stab_coeff,
@@ -179,16 +179,19 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     cd, emd1mi, emd2mi, exppmi = validate(network, dataloader_val, 20, args.epoch_iter_limit_val)
                     best_val_loss = min(best_val_loss, cd)
                     print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
-                          % (epoch, i, len_val_dataset / args.batchSize, emd1mi,
+                          % (epoch, i, len_dataset / args.batchSize, emd1mi,
                              emd2mi, exppmi, cd))
-                    print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}")
+                    print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}, time {time.clock()-startt}")
                     train_curve.append(np.mean(train_loss))
                     train_curvecd.append(np.mean(train_losscd))
                     val_curve.append(np.mean(emd2mi))
                     val_curvecd.append(np.mean(cd))
+                    curves = np.stack(np.array(train_curve), np.array(val_curve), np.array(train_curvecd), np.array(val_curvecd))
+
 
                     if not os.path.exists(dir_name):
                         os.mkdir(dir_name)
+                    np.save(f"{dir_name}/curves", curves)
                     if emd2mi < best_val_loss:
                         best_val_loss = emd2mi
                         print('saving net...')
@@ -211,4 +214,4 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
         del (dataloader)
         del (dataset_val)
         del (dataloader_val)
-    return np.stack(np.array(train_curve), np.array(val_curve), np.array(train_curvecd), np.array(val_curvecd))
+    return curves
