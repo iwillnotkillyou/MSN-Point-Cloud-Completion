@@ -64,7 +64,8 @@ class TransformMSN(nn.Module):
             y = x.unsqueeze(2).expand(x.size(0), x.size(1), rand_grid.size(2)).contiguous()
             y = torch.cat((rand_grid, y), 1).contiguous()
             y = self.decoder[i](y)
-            y = self.additionaldecoder[i](y, y, x)
+            if self.additionaldecoder is not None:
+                y = self.additionaldecoder[i](y, y, x)
             outs.append(y)
 
         outs = torch.cat(outs, 2).contiguous()
@@ -86,4 +87,3 @@ class TransformMSN(nn.Module):
         xx = xx[:, 0:3, :]
         out2 = (xx + delta).transpose(2, 1).contiguous()
         return out1, out2, loss_mst
-
