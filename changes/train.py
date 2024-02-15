@@ -83,7 +83,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
               trainp='./data/train.list',
               valp='./data/val.list'):
     torch.save(network.model.changed_state_dict(), '%s/network.pth' % (dir_name))
-    startt = time.clock()
+    startt = time.process_time()
     def optimf(lr):
         return optims.KFAC(lr, kfacargs.momentum, kfacargs.cov_ema_decay,
                            kfacargs.damping, kfacargs.stab_coeff,
@@ -181,7 +181,7 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
                     print(args.env + ' val [%d: %d/%d]  emd1: %f emd2: %f expansion_penalty: %f cd : %f'
                           % (epoch, i, len_dataset / args.batchSize, emd1mi,
                              emd2mi, exppmi, cd))
-                    print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}, time {time.clock()-startt}")
+                    print(f"mean train emd2 : {np.mean(train_loss)},cd {np.mean(train_losscd)}, time {time.process_time()-startt}")
                     train_curve.append(np.mean(train_loss))
                     train_curvecd.append(np.mean(train_losscd))
                     val_curve.append(np.mean(emd2mi))
