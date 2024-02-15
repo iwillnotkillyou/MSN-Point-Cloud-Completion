@@ -195,19 +195,22 @@ class ResSizes(nn.Module):
 
 
 class PointNetfeatReturn2TPartial(nn.Module):
-    def __init__(self, num_points, sizes):
+    def __init__(self, sizes):
         super().__init__()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.extra = GlobalTransformIndentityGlobalV() if sizes is None else GlobalTransformDepthSep(128, 1024, sizes,
-                                                                                                     3, True)
+        self.extra = GlobalTransformIndentityGlobalV() if sizes is None else GlobalTransformDepthSep(128, sizes,
+                                                                                                     3, 1024)
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)
 
-        self.num_points = num_points
-
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
+        for param in self.extra.parameters():
+            param.requires_grad = False
     def forward(self, x):
         inp = x
         x = F.relu(self.bn1(self.conv1(x)))
@@ -226,17 +229,21 @@ class PointNetfeatReturn2TPartial(nn.Module):
 
 
 class PointNetfeatReturn2(nn.Module):
-    def __init__(self, num_points, sizes, latents):
+    def __init__(self, sizes, latents):
         super().__init__()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.extra = GlobalTransformDepthSep(128, 1028, sizes, latents, True)
+        self.extra = GlobalTransformIndentityGlobalV() if sizes is None else GlobalTransformDepthSep(128, sizes, latents, 1028)
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)
-
-        self.num_points = num_points
+\
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
+        for param in self.extra.parameters():
+            param.requires_grad = False
 
     def forward(self, x):
         x = F.relu(self.bn1(self.conv1(x)))

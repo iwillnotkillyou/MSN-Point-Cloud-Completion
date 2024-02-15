@@ -12,7 +12,7 @@ import MDS.MDS_module as MDS_module
 
 
 class PointNetfeat(nn.Module):
-    def __init__(self, num_points=8192):
+    def __init__(self):
         super(PointNetfeat, self).__init__()
         self.conv1 = torch.nn.Conv1d(3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
@@ -21,8 +21,6 @@ class PointNetfeat(nn.Module):
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.bn2 = torch.nn.BatchNorm1d(128)
         self.bn3 = torch.nn.BatchNorm1d(1024)
-
-        self.num_points = num_points
 
     def forward(self, x):
         batchsize = x.size()[0]
@@ -77,6 +75,10 @@ class PointNetRes(nn.Module):
         self.bn7 = torch.nn.BatchNorm1d(3)
         self.th = nn.Tanh()
 
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
+
     def forward(self, x):
         batchsize = x.size()[0]
         npoints = x.size()[2]
@@ -102,7 +104,7 @@ class MSN(nn.Module):
         self.bottleneck_size = bottleneck_size
         self.n_primitives = n_primitives
         self.encoder = nn.Sequential(
-            PointNetfeat(num_points),
+            PointNetfeat(),
             nn.Linear(1024, self.bottleneck_size),
             nn.BatchNorm1d(self.bottleneck_size),
             nn.ReLU()
