@@ -75,10 +75,6 @@ class PointNetRes(nn.Module):
         self.bn7 = torch.nn.BatchNorm1d(3)
         self.th = nn.Tanh()
 
-    def freeze(self):
-        for param in self.parameters():
-            param.requires_grad = False
-
     def forward(self, x):
         batchsize = x.size()[0]
         npoints = x.size()[2]
