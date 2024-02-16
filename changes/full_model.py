@@ -1,5 +1,9 @@
-from transfered_model import *
+import sys
+import os
+sys.path.append(os.getcwd())
 import emd.emd_module as emd
+from transfered_model import *
+from model import *
 
 
 class FullModel(nn.Module):

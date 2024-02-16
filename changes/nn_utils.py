@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -13,6 +15,33 @@ class LinearBNRelu(nn.Module):
         self.m = nn.Sequential(torch.nn.Linear(in_channels, out_channels),
                                torch.nn.BatchNorm1d(out_channels),
                                torch.nn.ReLU())
+
+    def forward(self, x):
+        return self.m(x)
+
+def channel_split(channels, num_splits, i):
+    return channels // num_splits + np.max(0, np.sign((channels-num_splits) - i))
+
+class DepthWise(nn.Module):
+
+    def __init__(self, in_channels, out_channels, num_splits, modulef):
+        super().__init__()
+        self.m = nn.ModuleList([nn.Sequential(modulef(channel_split(in_channels,num_splits,i),
+                                                     channel_split(out_channels,num_splits,i))) for i in
+                                range(num_splits)])
+        self.model_in_size_cum_sum = np.concatenate([[0], np.cumsum([x.in_features for x in self.m])])
+        assert self.model_in_size_cum_sum[-1] == in_channels
+
+    def forward(self, x):
+        return torch.cat([self.m[i](x[:, self.model_size_cum_sum[i]: self.model_in_size_cum_sum[i+1]])
+                          for i in range(self.num_splits)], 1)
+
+class LinearDepthSepBN(nn.Module):
+    def __init__(self, in_channels, out_channels, num_splits):
+        super().__init__()
+        self.m = nn.ModuleList([nn.Sequential(torch.nn.Linear(in_channels//num_splits, out_channels//num_splits),
+                               torch.nn.BatchNorm1d(out_channels//num_splits)) for _ in range(num_splits)])
+
 
     def forward(self, x):
         return self.m(x)

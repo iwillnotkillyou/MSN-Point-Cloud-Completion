@@ -16,7 +16,7 @@ def data_setup(args, phase, num_workers, repeat):
     return data_queue, data_processes
 
 
-def test(split, args, its=100):
+def test(split, args, its=100, printf = None):
     """ Evaluated model on test set """
     print("Testing....")
     args.model.eval()
@@ -31,7 +31,6 @@ def test(split, args, its=100):
     Nb = min(Nb, its)
     for bidx in tqdm(range(Nb), total=Nb, position=0, leave=True):
         targets, clouds_data = data_queue.get()
-
         loss, dist1, dist2, emd_cost, outputs = args.step(targets, clouds_data)
 
         losses.append(loss)
