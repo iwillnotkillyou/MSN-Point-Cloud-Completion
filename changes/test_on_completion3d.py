@@ -3,7 +3,7 @@ from tqdm import tqdm
 from multiprocessing import Queue
 from data_process import kill_data_processes
 from shapenet import ShapenetDataProcess
-
+import torch
 def data_setup(args, phase, num_workers, repeat):
     if args.dataset == 'shapenet':
         DataProcessClass = ShapenetDataProcess
@@ -31,7 +31,8 @@ def test(split, args, its=100, printf = None):
     Nb = min(Nb, its)
     for i in tqdm(range(Nb), total=Nb, position=0, leave=True):
         targets, clouds_data = data_queue.get()
-        loss, dist1, dist2, emd_cost, outputs = args.step(targets, clouds_data, i)
+        with torch.no_grad():
+          loss, dist1, dist2, emd_cost, outputs = args.step(targets, clouds_data, i)
 
         losses.append(loss)
 

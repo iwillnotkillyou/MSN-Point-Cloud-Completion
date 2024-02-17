@@ -43,17 +43,23 @@ def make_data_splits(args, allp, trainp = './data/train.list',
     saveSplit(valp, model_list[tvsplitpos:vtsplitpos])
     saveSplit(testp, model_list[vtsplitpos:])
 def exportf(tensor,name):
-    trimesh.points.PointCloud([tensor[0, :, i].cpu().numpy() for i in tensor.shape[2]]).export(name)
-def printf(inp, output1, output2, target, i, name, fol):
-    if i % 25 == 0 and (i // 50) % 100 == 0:
-        exportf(inp, f"{fol}/{i}inp")
-        exportf(output1, f"{fol}/{i}out1{name}")
-        exportf(output2, f"{fol}/{i}out2{name}")
-        exportf(target, f"{fol}/{i}targ{name}")
+    ps = [tensor[0, i, :].detach().cpu().numpy() for i in range(tensor.shape[1])]
+    ls = [f"v {p[0]} {p[1]} {p[2]}\n" for p in ps]
+    open(f"{name}.obj","w").writelines(ls)
+def printf(inp, output2, target, i, name, fol):
+    os.makedirs(fol,exist_ok= True)
+    exportf(inp.transpose(1,2), f"{fol}/{i}inp")
+    #exportf(output1, f"{fol}/{i}out1{name}")
+    exportf(output2, f"{fol}/{i}out2{name}")
+    exportf(target, f"{fol}/{i}targ{name}")
+
+def printf2(inp, output2, target, i, name, fol):
+    if i % 10 == 0 and (i//50) & 100 == 0:
+        printf(inp,output2,target,i,name,fol)
 def test(network, dataloader_test, name, fol):
 
 
-    vs = validate(network,dataloader_test,100,None, lambda x,y,z,i :printf(x,y,z,i,name,fol))
+    vs = validate(network,dataloader_test,100,None, lambda x,y,z,i :printf2(x,y,z,i,name,fol))
     cd, emd1mi, emd2mi, exppmi = vs
     cdm, emd1mim, emd2mim, exppmim = (np.mean(v) for v in vs)
     print('test emd1: %f emd2: %f expansion_penalty: %f cd : %f'
