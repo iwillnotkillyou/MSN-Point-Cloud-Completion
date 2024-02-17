@@ -29,8 +29,8 @@ class TransformMSN(nn.Module):
             nn.ReLU()
         )
         self.train_encoder = train_encoder
-        self.additionaldecoder = None if additionaldecoderf is None else [additionaldecoderf()
-                                                                          for i in range(self.n_primitives)]
+        self.additionaldecoder = None if additionaldecoderf is None else nn.ModuleList([additionaldecoderf()
+                                                                          for i in range(self.n_primitives)])
         self.decoder = nn.ModuleList(
             [PointGenCon(bottleneck_size=2 + self.bottleneck_size) for i in range(0, self.n_primitives)])
         self.res = PointNetRes()
@@ -52,10 +52,6 @@ class TransformMSN(nn.Module):
         ks = ['additional_encoder', 'encoder_modif']
         r = dict((k, d[k]) for k in d if any(k2 in k for k2 in ks))
         return r
-
-    def cuda(self):
-      super().cuda()
-      self.additionaldecoder.cuda()
 
 
     def forward(self, x):
