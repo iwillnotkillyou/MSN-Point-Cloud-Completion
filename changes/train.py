@@ -44,11 +44,12 @@ def make_data_splits(args, allp, trainp = './data/train.list',
     saveSplit(testp, model_list[vtsplitpos:])
 def exportf(tensor,name):
     trimesh.points.PointCloud([tensor[0, :, i].cpu().numpy() for i in tensor.shape[2]]).export(name)
-def printf(inp, output1, output2, i, name, fol):
+def printf(inp, output1, output2, target, i, name, fol):
     if i % 25 == 0 and (i // 50) % 100 == 0:
         exportf(inp, f"{fol}/{i}inp")
         exportf(output1, f"{fol}/{i}out1{name}")
         exportf(output2, f"{fol}/{i}out2{name}")
+        exportf(target, f"{fol}/{i}targ{name}")
 def test(network, dataloader_test, name, fol):
 
 
