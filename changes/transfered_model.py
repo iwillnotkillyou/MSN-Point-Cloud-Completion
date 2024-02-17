@@ -53,6 +53,11 @@ class TransformMSN(nn.Module):
         r = dict((k, d[k]) for k in d if any(k2 in k for k2 in ks))
         return r
 
+    def cuda(self):
+      super().cuda()
+      self.additionaldecoder.cuda()
+
+
     def forward(self, x):
         partial = x
         x, x1 = self.encoder[0](x)

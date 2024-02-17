@@ -88,7 +88,7 @@ def validate(network, dataloader, num_its_emd, iter_limit, printf = None):
             emd2m = emd2.mean()
             emd2mi.append(emd2m.item())
             dist1, dist2 = chamferDist()(output2.float(), gt)
-            cd.append(torch.mean(dist2) + torch.mean(dist1)).item()
+            cd.append((torch.mean(dist2) + torch.mean(dist1)).item())
             exppmi.append(expansion_penalty.mean().item())
             del (inp)
             del (output1)
