@@ -29,9 +29,9 @@ def test(split, args, its=100, printf = None):
         Nb += 1
     # iterate over dataset in batches
     Nb = min(Nb, its)
-    for bidx in tqdm(range(Nb), total=Nb, position=0, leave=True):
+    for i in tqdm(range(Nb), total=Nb, position=0, leave=True):
         targets, clouds_data = data_queue.get()
-        loss, dist1, dist2, emd_cost, outputs = args.step(targets, clouds_data)
+        loss, dist1, dist2, emd_cost, outputs = args.step(targets, clouds_data, i)
 
         losses.append(loss)
 
