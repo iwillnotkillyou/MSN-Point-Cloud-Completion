@@ -72,11 +72,10 @@ class ShapeNetOBJ(data.Dataset):
             except ValueError:
                 return False
         def read_pcd(filename):
-          print([([x for x in l.strip().split(" ")[1:] if not isfloat(x)],i) for i,l in enumerate(open(filename).readlines()) if l[0] == "v"])
-          pcd = np.array([[[int(x) for x in l.strip().split(" ")][1:]] for l in open(filename).readlines() if l[0] == "v"])
+          pcd = np.array([[float(x) for x in l.strip().split(" ")[1:]] for l in open(filename).readlines() if l[0] == "v"])
           return torch.from_numpy(pcd).float()
-        partial = read_pcd(os.path.join(self.partial_folder, model_id + '_%d_denoised.obj' % scan_id))
-        complete = read_pcd(os.path.join(self.complete_folder, '%s.pcd' % model_id))
+        partial = read_pcd(os.path.join(self.partial_folder, f'{model_id}_{scan_id}_denoised.obj'))
+        complete = read_pcd(os.path.join(self.complete_folder, f'{model_id}_{scan_id}_denoised.obj'))
         return model_id, resample_pcd(partial, 5000), resample_pcd(complete, self.npoints)
 
 
