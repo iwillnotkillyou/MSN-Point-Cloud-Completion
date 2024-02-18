@@ -10,6 +10,7 @@ from my_chamfer_interface import chamferDist
 import gc
 import time
 import trimesh
+import numpy as np
 class KFACargs:
     def __init__(self, momentum, cov_ema_decay, damping, stab_coeff, use_cholesky, adjust_momentum,
                  acc_iters):
@@ -51,7 +52,7 @@ def printf(inp, output2, target, i, name, fol):
     exportf(inp.transpose(1,2), f"{fol}/{i}inp")
     #exportf(output1, f"{fol}/{i}out1{name}")
     exportf(output2, f"{fol}/{i}out2{name}")
-    exportf(target, f"{fol}/{i}targ{name}")
+    exportf(target, f"{fol}/{i}targ")
 
 def printf2(inp, output2, target, i, name, fol):
     if i % 10 == 0 and (i//50) & 100 == 0:
@@ -59,7 +60,7 @@ def printf2(inp, output2, target, i, name, fol):
 def test(network, dataloader_test, name, bs, fol):
 
 
-    vs = validate(network,dataloader_test,100,None,bs, lambda x,y,z,i :printf2(x,y,z,i,name,fol))
+    vs = validate(network,dataloader_test,100,None,bs, lambda x,y,z,i :printf(x,y,z,i,name,fol))
     cd, emd1mi, emd2mi, exppmi = vs
     cdm, emd1mim, emd2mim, exppmim = (np.mean(v) for v in vs)
     print('test emd1: %f emd2: %f expansion_penalty: %f cd : %f'
@@ -82,7 +83,7 @@ def validate(network, dataloader, num_its_emd, iter_limit, bs = None, printf = N
             gt = gt.float().cuda()
             output1, output2, emd1, emd2, expansion_penalty = network(inp, gt.contiguous(), 0.004, num_its_emd)
             if printf is not None:
-                printf(inp, output1, output2, i*bs)
+                printf(inp, output2, gt, i*bs)
             emd1m = emd1.mean()
             emd1mi.append(emd1m.item())
             emd2m = emd2.mean()
@@ -90,6 +91,7 @@ def validate(network, dataloader, num_its_emd, iter_limit, bs = None, printf = N
             dist1, dist2 = chamferDist()(output2.float(), gt)
             cd.append((torch.mean(dist2) + torch.mean(dist1)).item())
             exppmi.append(expansion_penalty.mean().item())
+            print(np.mean(emd2mi),np.mean(cd),np.mean(exppmi))
             del (inp)
             del (output1)
             del (output2)
@@ -101,7 +103,7 @@ def batchnum(epoch,batchind, loader):
 
 def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=defaultKFACargs,
               trainp='./data/train.list',
-              valp='./data/val.list'):
+              valp='./data/val.list', obj = False):
     startt = time.process_time()
     def optimf(lr):
         return optims.KFAC(lr, kfacargs.momentum, kfacargs.cov_ema_decay,
@@ -124,19 +126,13 @@ def trainFull(network, dir_name, args, logevery = 100, lrate=0.001, kfacargs=def
     val_curve = []
     train_curvecd = []
     val_curvecd = []
-    val_batches = []
-    labels_generated_points = (
-        torch.Tensor(range(1, (args.n_primitives + 1) * (args.num_points // args.n_primitives) + 1))
-        .view(args.num_points // args.n_primitives, (args.n_primitives + 1)).transpose(0, 1))
-    labels_generated_points = (labels_generated_points) % (args.n_primitives + 1)
-    labels_generated_points = labels_generated_points.contiguous().view(-1)
     print("Random Seed: ", args.manualSeed)
     random.seed(args.manualSeed)
     torch.manual_seed(args.manualSeed)
     best_val_loss = np.inf
     network.to("cuda")
-    dataset = ShapeNet(trainp, npoints=args.num_points)
-    dataset_val = ShapeNet(valp, npoints=args.num_points)
+    dataset = ShapeNetOBJ(trainp, npoints=args.num_points) if obj else ShapeNet(trainp, npoints=args.num_points)
+    dataset_val = ShapeNetOBJ(valp, npoints=args.num_points) if obj else ShapeNet(valp, npoints=args.num_points)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batchSize,
                                              shuffle=True, num_workers=args.workers, drop_last=True)
     dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=args.batchSize,

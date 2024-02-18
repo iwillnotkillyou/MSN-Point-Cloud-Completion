@@ -49,15 +49,15 @@ class ShapeNet(data.Dataset):
         return self.len
 
 class ShapeNetOBJ(data.Dataset):
-    def __init__(self, complete_folder, partial_folder, list_path, npoints = 8192):
+    def __init__(self, list_path, npoints = 8192):
         self.npoints = npoints
 
         with open(os.path.join(list_path)) as file:
             self.model_list = [line.strip() for line in file]
         random.shuffle(self.model_list)
         self.len = len(self.model_list * 50)
-        self.complete_folder = complete_folder
-        self.partial_folder = partial_folder
+        self.complete_folder = "./data/complete/"
+        self.partial_folder = "./data/partial/"
 
     def __len__(self):
         return 50 * len(self.model_list)
