@@ -48,6 +48,37 @@ class ShapeNet(data.Dataset):
     def __len__(self):
         return self.len
 
+class ShapeNetOBJ(data.Dataset):
+    def __init__(self, complete_folder, partial_folder, list_path, npoints = 8192):
+        self.npoints = npoints
+
+        with open(os.path.join(list_path)) as file:
+            self.model_list = [line.strip() for line in file]
+        random.shuffle(self.model_list)
+        self.len = len(self.model_list * 50)
+        self.complete_folder = complete_folder
+        self.partial_folder = partial_folder
+
+    def __len__(self):
+        return 50 * len(self.model_list)
+
+    def __getitem__(self, index):
+        model_id = self.model_list[index // 50]
+        scan_id = index % 50
+        def isfloat(x):
+            try:
+                float(x)
+                return True
+            except ValueError:
+                return False
+        def read_pcd(filename):
+          print([([x for x in l.strip().split(" ")[1:] if not isfloat(x)],i) for i,l in enumerate(open(filename).readlines()) if l[0] == "v"])
+          pcd = np.array([[[int(x) for x in l.strip().split(" ")][1:]] for l in open(filename).readlines() if l[0] == "v"])
+          return torch.from_numpy(pcd).float()
+        partial = read_pcd(os.path.join(self.partial_folder, model_id + '_%d_denoised.obj' % scan_id))
+        complete = read_pcd(os.path.join(self.complete_folder, '%s.pcd' % model_id))
+        return model_id, resample_pcd(partial, 5000), resample_pcd(complete, self.npoints)
+
 
 class EmbeddingsDataset(torch.utils.data.Dataset):
     def __init__(self, folder, embedder_batch_size, transform=None):

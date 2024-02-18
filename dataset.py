@@ -5,6 +5,10 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import os
 import random
+
+import trimesh
+
+
 #from utils import *
 
 def resample_pcd(pcd, n):
@@ -13,7 +17,7 @@ def resample_pcd(pcd, n):
     if idx.shape[0] < n:
         idx = np.concatenate([idx, np.random.randint(pcd.shape[0], size = n - pcd.shape[0])])
     return pcd[idx[:n]]
-           
+
 class ShapeNet(data.Dataset): 
     def __init__(self, train = True, npoints = 8192):
         if train:

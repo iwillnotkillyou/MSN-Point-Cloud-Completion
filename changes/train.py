@@ -56,10 +56,10 @@ def printf(inp, output2, target, i, name, fol):
 def printf2(inp, output2, target, i, name, fol):
     if i % 10 == 0 and (i//50) & 100 == 0:
         printf(inp,output2,target,i,name,fol)
-def test(network, dataloader_test, name, fol):
+def test(network, dataloader_test, name, bs, fol):
 
 
-    vs = validate(network,dataloader_test,100,None, lambda x,y,z,i :printf2(x,y,z,i,name,fol))
+    vs = validate(network,dataloader_test,100,None,bs, lambda x,y,z,i :printf2(x,y,z,i,name,fol))
     cd, emd1mi, emd2mi, exppmi = vs
     cdm, emd1mim, emd2mim, exppmim = (np.mean(v) for v in vs)
     print('test emd1: %f emd2: %f expansion_penalty: %f cd : %f'
@@ -67,7 +67,7 @@ def test(network, dataloader_test, name, fol):
     return cd, emd1mi, emd2mi, exppmi
 
 
-def validate(network, dataloader, num_its_emd, iter_limit, printf = None):
+def validate(network, dataloader, num_its_emd, iter_limit, bs = None, printf = None):
     network.eval()
     cd = []
     emd1mi = []
@@ -82,7 +82,7 @@ def validate(network, dataloader, num_its_emd, iter_limit, printf = None):
             gt = gt.float().cuda()
             output1, output2, emd1, emd2, expansion_penalty = network(inp, gt.contiguous(), 0.004, num_its_emd)
             if printf is not None:
-                printf(inp, output1, output2, i)
+                printf(inp, output1, output2, i*bs)
             emd1m = emd1.mean()
             emd1mi.append(emd1m.item())
             emd2m = emd2.mean()
